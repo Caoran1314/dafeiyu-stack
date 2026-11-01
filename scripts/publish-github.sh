@@ -18,7 +18,7 @@ if [ ! -d .git ]; then
 fi
 
 git add -A
-git commit -q -m "林小鱼 v1.0：数字人格 QQ 机器人（心智层 + 部署包 + 文档）" || echo "（无改动可提交）"
+git commit -q -m "大肥鱼 v1.0：数字人格 QQ 机器人（心智层 + 部署包 + 文档）" || echo "（无改动可提交）"
 git branch -M main
 
 REMOTE="git@github.com:$GH_USER/$REPO_NAME.git"

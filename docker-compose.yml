@@ -1,4 +1,4 @@
-# 林小鱼 · 一键部署（AstrBot + NapCat + Ollama + ASR + GPT-SoVITS）
+# 数字人格 · 一键部署（AstrBot + NapCat + Ollama + ASR + GPT-SoVITS）
 # 用法：
 #   1) cp .env.example .env  并填写
 #   2) docker compose up -d
