@@ -1,0 +1,9 @@
+data/
+.env
+*.log
+__pycache__/
+*.pyc
+.DS_Store
+
+# 作者自己的真实人设，不随仓库分发
+persona/local/

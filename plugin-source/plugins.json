@@ -1,0 +1,182 @@
+{
+  "$meta": {
+    "schema_version": 1,
+    "name": "大肥鱼插件集",
+    "homepage": "https://github.com/Caoran1314/dafeiyu-stack",
+    "description": "数字人格 QQ 机器人：心智层、拟人表达、可视化",
+    "repository": "https://github.com/Caoran1314/dafeiyu-stack"
+  },
+  "Caoran1314/dafeiyu_brain": {
+    "author": "Caoran1314",
+    "name": "dafeiyu_brain",
+    "display_name": "大肥鱼记忆大脑",
+    "version": "0.1.0",
+    "repo": "https://github.com/Caoran1314/dafeiyu-stack/tree/main/plugins/dafeiyu_brain",
+    "desc": "本地 SQLite 长期记忆 + 核心锚点 + 条件人格注入；给机器人两个工具：主动记、主动想",
+    "category": "AI 增强",
+    "support_platforms": [
+      "aiocqhttp"
+    ],
+    "astrbot_version": ">=4.24.0",
+    "download_url": "https://cdn.jsdelivr.net/gh/Caoran1314/dafeiyu-stack@main/plugin-source/zips/dafeiyu_brain-0.1.0.zip",
+    "logo": ""
+  },
+  "Caoran1314/dafeiyu_brain3d": {
+    "author": "Caoran1314",
+    "name": "dafeiyu_brain3d",
+    "display_name": "大肥鱼3D记忆脑",
+    "version": "0.1.0",
+    "repo": "https://github.com/Caoran1314/dafeiyu-stack/tree/main/plugins/dafeiyu_brain3d",
+    "desc": "把记忆库画成真实的 3D 皮层脑，附时间线与四激素面板",
+    "category": "工具",
+    "support_platforms": [
+      "aiocqhttp"
+    ],
+    "astrbot_version": ">=4.24.0",
+    "download_url": "https://cdn.jsdelivr.net/gh/Caoran1314/dafeiyu-stack@main/plugin-source/zips/dafeiyu_brain3d-0.1.0.zip",
+    "logo": ""
+  },
+  "Caoran1314/dafeiyu_eval": {
+    "author": "Caoran1314",
+    "name": "dafeiyu_eval",
+    "display_name": "大肥鱼拟人度评测",
+    "version": "0.1.0",
+    "repo": "https://github.com/Caoran1314/dafeiyu-stack/tree/main/plugins/dafeiyu_eval",
+    "desc": "只观测不改行为：统计字数/分条/问句/AI 腔/标点/延迟，给出不达标项",
+    "category": "AI 增强",
+    "support_platforms": [
+      "aiocqhttp"
+    ],
+    "astrbot_version": ">=4.24.0",
+    "download_url": "https://cdn.jsdelivr.net/gh/Caoran1314/dafeiyu-stack@main/plugin-source/zips/dafeiyu_eval-0.1.0.zip",
+    "logo": ""
+  },
+  "Caoran1314/dafeiyu_hormone": {
+    "author": "Caoran1314",
+    "name": "dafeiyu_hormone",
+    "display_name": "大肥鱼心境",
+    "version": "0.1.0",
+    "repo": "https://github.com/Caoran1314/dafeiyu-stack/tree/main/plugins/dafeiyu_hormone",
+    "desc": "四激素内分泌心境引擎：血清素/多巴胺/皮质醇/催产素随时间回归基线，被对话事件扰动，真实影响语气",
+    "category": "AI 增强",
+    "support_platforms": [
+      "aiocqhttp",
+      "webchat"
+    ],
+    "astrbot_version": ">=4.24.0",
+    "download_url": "https://cdn.jsdelivr.net/gh/Caoran1314/dafeiyu-stack@main/plugin-source/zips/dafeiyu_hormone-0.1.0.zip",
+    "logo": ""
+  },
+  "Caoran1314/dafeiyu_human": {
+    "author": "Caoran1314",
+    "name": "dafeiyu_human",
+    "display_name": "大肥鱼拟人管线",
+    "version": "0.1.0",
+    "repo": "https://github.com/Caoran1314/dafeiyu-stack/tree/main/plugins/dafeiyu_human",
+    "desc": "让她像人一样发消息：会延迟、会分条、会打错字、不说 AI 腔、不用冒号破折号和句号",
+    "category": "AI 增强",
+    "support_platforms": [
+      "aiocqhttp"
+    ],
+    "astrbot_version": ">=4.24.0",
+    "download_url": "https://cdn.jsdelivr.net/gh/Caoran1314/dafeiyu-stack@main/plugin-source/zips/dafeiyu_human-0.1.0.zip",
+    "logo": ""
+  },
+  "Caoran1314/dafeiyu_mindcore": {
+    "author": "Caoran1314",
+    "name": "dafeiyu_mindcore",
+    "display_name": "大肥鱼心智内核",
+    "version": "0.1.0",
+    "repo": "https://github.com/Caoran1314/dafeiyu-stack/tree/main/plugins/dafeiyu_mindcore",
+    "desc": "独立记忆库：权重/年龄/回想次数 + 分段衰减 + 海马晋升 + 向量召回 + 技能 SM2 + 离线补偿 + 生命卡",
+    "category": "AI 增强",
+    "support_platforms": [
+      "aiocqhttp",
+      "webchat"
+    ],
+    "astrbot_version": ">=4.24.0",
+    "download_url": "https://cdn.jsdelivr.net/gh/Caoran1314/dafeiyu-stack@main/plugin-source/zips/dafeiyu_mindcore-0.1.0.zip",
+    "logo": ""
+  },
+  "Caoran1314/dafeiyu_persona_core": {
+    "author": "Caoran1314",
+    "name": "dafeiyu_persona_core",
+    "display_name": "大肥鱼人格内核",
+    "version": "0.1.0",
+    "repo": "https://github.com/Caoran1314/dafeiyu-stack/tree/main/plugins/dafeiyu_persona_core",
+    "desc": "人格向量的单轮钳位（±0.12）+ 内核强度保底（≥0.15）+ 核心区签名只读，防止聊几句人设被改写",
+    "category": "AI 增强",
+    "support_platforms": [
+      "aiocqhttp",
+      "webchat"
+    ],
+    "astrbot_version": ">=4.24.0",
+    "download_url": "https://cdn.jsdelivr.net/gh/Caoran1314/dafeiyu-stack@main/plugin-source/zips/dafeiyu_persona_core-0.1.0.zip",
+    "logo": ""
+  },
+  "Caoran1314/dafeiyu_photo": {
+    "author": "Caoran1314",
+    "name": "dafeiyu_photo",
+    "display_name": "大肥鱼相册",
+    "version": "0.1.0",
+    "repo": "https://github.com/Caoran1314/dafeiyu-stack/tree/main/plugins/dafeiyu_photo",
+    "desc": "收到你发的照片会存进她的相册，聊到相关话题时主动把图发出来（有频率限制，不乱发）",
+    "category": "AI 增强",
+    "support_platforms": [
+      "aiocqhttp",
+      "webchat"
+    ],
+    "astrbot_version": ">=4.24.0",
+    "download_url": "https://cdn.jsdelivr.net/gh/Caoran1314/dafeiyu-stack@main/plugin-source/zips/dafeiyu_photo-0.1.0.zip",
+    "logo": ""
+  },
+  "Caoran1314/dafeiyu_room": {
+    "author": "Caoran1314",
+    "name": "dafeiyu_room",
+    "display_name": "大肥鱼房间",
+    "version": "0.1.0",
+    "repo": "https://github.com/Caoran1314/dafeiyu-stack/tree/main/plugins/dafeiyu_room",
+    "desc": "把她此刻在干什么变成 3D 房间：睡觉、床上刷手机、电脑前、窗边发呆",
+    "category": "工具",
+    "support_platforms": [
+      "aiocqhttp",
+      "webchat"
+    ],
+    "astrbot_version": ">=4.24.0",
+    "download_url": "https://cdn.jsdelivr.net/gh/Caoran1314/dafeiyu-stack@main/plugin-source/zips/dafeiyu_room-0.1.0.zip",
+    "logo": ""
+  },
+  "Caoran1314/dafeiyu_voice": {
+    "author": "Caoran1314",
+    "name": "dafeiyu_voice",
+    "display_name": "大肥鱼音色",
+    "version": "0.1.0",
+    "repo": "https://github.com/Caoran1314/dafeiyu-stack/tree/main/plugins/dafeiyu_voice",
+    "desc": "把回复的语音换成 GPT-SoVITS 本地克隆音色；只替换 TTS 这一步，人格、记忆、分条全部不动",
+    "category": "AI 增强",
+    "support_platforms": [
+      "aiocqhttp",
+      "webchat"
+    ],
+    "astrbot_version": ">=4.24.0",
+    "download_url": "https://cdn.jsdelivr.net/gh/Caoran1314/dafeiyu-stack@main/plugin-source/zips/dafeiyu_voice-0.1.0.zip",
+    "logo": ""
+  },
+  "Caoran1314/dafeiyu_douyin_bridge": {
+    "author": "Caoran1314",
+    "name": "dafeiyu_douyin_bridge",
+    "display_name": "大肥鱼抖音分享桥",
+    "short_desc": "她刷到好玩的，会主动截图发到你 QQ",
+    "version": "0.1.0",
+    "repo": "https://github.com/Caoran1314/dafeiyu-stack/tree/main/plugins/dafeiyu_douyin_bridge",
+    "desc": "监视一个截图目录，发现新图就配一句话主动发给你，同时把房间切换到\"刷抖音\"。不登录抖音、不操作 App，只读文件夹。",
+    "category": "AI 增强",
+    "support_platforms": [
+      "aiocqhttp",
+      "webchat"
+    ],
+    "astrbot_version": "\">=4.24.0\"",
+    "download_url": "https://cdn.jsdelivr.net/gh/Caoran1314/dafeiyu-stack@main/plugin-source/zips/dafeiyu_douyin_bridge-0.1.0.zip",
+    "logo": ""
+  }
+}

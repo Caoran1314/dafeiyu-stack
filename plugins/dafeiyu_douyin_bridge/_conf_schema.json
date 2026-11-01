@@ -1,0 +1,28 @@
+{
+  "enable": { "description": "启用分享桥", "type": "bool", "default": true },
+  "watch_dirs": {
+    "description": "监视的截图目录（多个用逗号分隔）",
+    "type": "string",
+    "default": "",
+    "hint": "留空=自动用 phone_control 的常见路径 + 插件自己的 inbox 目录"
+  },
+  "notify_umo": {
+    "description": "推送目标会话 ID",
+    "type": "string",
+    "default": "",
+    "hint": "在要收消息的会话里发 /抖音桥配置 自动写入，不用手填"
+  },
+  "caption": {
+    "description": "配文模板",
+    "type": "string",
+    "default": "",
+    "hint": "留空按时间自动生成；可用 {title} 占位，会替换成同名 .txt/.json 里的标题"
+  },
+  "max_images": { "description": "一条消息最多几张图", "type": "int", "default": 3 },
+  "max_per_day": { "description": "每天最多推送几次", "type": "int", "default": 6 },
+  "min_interval": { "description": "两次推送最小间隔（秒）", "type": "int", "default": 600 },
+  "poll_seconds": { "description": "扫描间隔（秒）", "type": "int", "default": 30 },
+  "settle_seconds": { "description": "等待文件写完（秒）", "type": "int", "default": 3 },
+  "report_room": { "description": "顺手把房间切到「刷抖音」", "type": "bool", "default": true },
+  "activity_ttl": { "description": "房间活动有效期（秒）", "type": "int", "default": 600 }
+}
