@@ -204,12 +204,10 @@ docker pull caowenrui/dafeiyu-asr:1.0      # 语音识别服务，230 MB
 ## 文档
 
 - [**完整部署手册**](docs/DEPLOY.md) —— 从空机器到能聊天，含 AstrBot/NapCat/Ollama/ASR 逐步配置
-- [发布到官方市场](docs/PUBLISH-MARKET.md)
 - [架构说明](docs/ARCHITECTURE.md)
 - [插件清单](docs/PLUGINS.md)
 - [常见问题](docs/FAQ.md)
 - [在 NAS 上跑安卓（刷抖音）](docs/ANDROID-VM.md)
-- [发布流程](PUBLISH.md)
 
 ## 注意
 

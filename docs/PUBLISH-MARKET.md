@@ -38,15 +38,6 @@
 
 **做法 A：拆仓库（推荐给要上架的插件）**
 
-用脚本一次搞定：
-
-```bash
-GITHUB_TOKEN=ghp_xxx ./scripts/split-for-market.sh
-# 或指定：./scripts/split-for-market.sh dafeiyu_mindcore dafeiyu_room
-```
-
-默认拆 4 个旗舰插件（mindcore / hormone / persona_core / human）。
-
 手动做法：
 
 ```bash

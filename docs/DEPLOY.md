@@ -28,7 +28,6 @@
 │ install-plugins.sh     复制 10 个插件到 AstrBot               │
 │ healthcheck.sh         检查容器 / 端口 / 模型 / ASR           │
 │ backup.sh              备份全部状态                           │
-│ remove-market-repos.sh 清理发布仓库（维护者用）               │
 └──────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────── 必须手动 ─────────────────────────┐
@@ -603,12 +602,10 @@ dafeiyu-stack/
 │   ├── install-plugins.sh
 │   ├── healthcheck.sh
 │   ├── backup.sh
-│   └── remove-market-repos.sh
 └── docs/
     ├── DEPLOY.md         ← 就是这个文件
     ├── ARCHITECTURE.md
     ├── PLUGINS.md
     ├── MARKET-INSTALL.md
-    ├── SUBMIT-CHECKLIST.md
     └── FAQ.md
 ```
