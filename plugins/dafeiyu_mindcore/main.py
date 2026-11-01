@@ -832,11 +832,11 @@ class MindCore(Star):
         self._pending_skill = ""
 
     def _vision_note(self) -> str:
-        """没有视觉模型时，明确告诉她别猜图。"""
-        if not bool(self._c("vision_blind", True)):
+        """图片只给一句描述时，提醒她别把描述当成"看得清清楚楚"。"""
+        if not bool(self._c("vision_note", True)):
             return ""
-        return ("【关于图片】你看不到图片里的内容，只有「有人发了张图」这件事。"
-                "被问到图里是什么，就直说你没细看、让他讲，不要猜内容。")
+        return ("【关于图片】系统会附一句图里有什么的简短描述，你就按那句话聊，"
+                "别当成自己盯着图看得很细；没给描述就说没看清，不要编。")
 
     def mind_get_context(self, text: str, top: int = 4, qvec: list | None = None) -> str:
         """成品上下文：人格 + 心境 + 记忆 + 技能，一次装配好交给大模型。"""

@@ -61,3 +61,42 @@ ref_audio_root= /AstrBot/data/refaudio
 ```
 
 心情差（皮质醇 ≥ 0.45）时会被 `dafeiyu_hormone` 的闸门压掉。
+
+## 7. 让她看懂图片（视觉模型）
+
+AstrBot 的图片处理是：**用一个小视觉模型把图转成一句文字**，再喂给主模型。
+主模型（DeepSeek 等）不需要支持图像。
+
+### 配置
+
+模型提供商 → 新增一个：
+
+| 字段 | 值 |
+|---|---|
+| 类型 | OpenAI 兼容 |
+| API Base | `http://172.17.0.1:11434/v1`（**不能写 `ollama`**，容器解析不了这个域名） |
+| 模型 | `qwen2.5vl:3b`（Ollama 里的视觉模型） |
+| modalities | `image` |
+| 启用 | ✅ |
+
+然后在 `provider_settings`：
+
+```json
+{
+  "default_image_caption_provider_id": "qwen-vl",
+  "image_caption_prompt": "用一句话说这张图里有什么，像女朋友随口说的那样，别像描述物体清单。"
+}
+```
+
+### 拉模型
+
+```bash
+docker exec -it dafeiyu-ollama ollama pull qwen2.5vl:3b
+```
+
+### 两个容易踩的点
+
+| 现象 | 原因 |
+|---|---|
+| 测试显示 `Connection error` | API Base 写了 `ollama`（容器里解析不了），改成 `172.17.0.1` |
+| 她发了图却答不上图里是什么 | AstrBot **只描述收到的图**，不描述她发出去的图；插件主动发图时要自己先调视觉模型 |

@@ -101,10 +101,10 @@
     "type": "float",
     "default": 0.6
   },
-  "vision_blind": {
-    "description": "看不到图片内容（没有视觉模型时保持开启）",
+  "vision_note": {
+    "description": "图片描述提醒",
     "type": "bool",
     "default": true,
-    "hint": "开了之后，她被问到图里是什么会直说没细看，不会瞎猜；配好视觉模型后关掉"
+    "hint": "开启后她会知道自己只有一句图片描述；没有视觉模型时也不会瞎猜图里是什么"
   }
 }

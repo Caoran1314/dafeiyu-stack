@@ -547,6 +547,7 @@ docker compose restart napcat
 | ASR 不识别 | 模型没下 | 下 `vosk-model-cn` 到 `data/asr/models` |
 | 插件列表里没有 `dafeiyu_*` | 复制路径不对 | `ls data/astrbot/plugins` 应该有 10 个目录 |
 | 主动消息发不出，日志 `cannot find platform` | 会话 ID 前缀写成了 `aiocqhttp` | 用平台实例 ID：`napcat:FriendMessage:<QQ>` |
+| 你发图她说不认识 | 视觉模型没配好或地址写成 `ollama` | 用 `172.17.0.1:11434/v1`，确认 provider 测试 available |
 | 她发了图却答不上图里是什么 | AstrBot 只给「收到的图」做描述，不给「自己发的图」做描述 | 插件主动发图时，自己先调视觉模型把描述写进配文 |
 | 中文变乱码 | 系统 locale | `docker compose exec astrbot locale` 应为 UTF-8 |
 
