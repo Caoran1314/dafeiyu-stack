@@ -1,0 +1,8 @@
+{
+  "enable": {
+    "description": "启用拟人度采集",
+    "type": "bool",
+    "hint": "只记录指标，不修改任何回复内容",
+    "default": true
+  }
+}

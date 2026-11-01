@@ -1,0 +1,9 @@
+name: dafeiyu_eval
+display_name: 大肥鱼拟人度评测
+desc: 只观测不改行为：统计字数/分条/问句/AI 腔/标点/延迟，给出不达标项
+help: /eval 看 24 小时报告，/eval 72 看三天，/eval export 导出盲测素材
+version: v0.1.0
+author: zexuan604
+support_platforms:
+  - aiocqhttp
+repo: https://github.com/Caoran1314/dafeiyu-plugins

@@ -1,0 +1,80 @@
+# 林小鱼 · 一键部署（AstrBot + NapCat + Ollama + ASR + GPT-SoVITS）
+# 用法：
+#   1) cp .env.example .env  并填写
+#   2) docker compose up -d
+#   3) 打开 http://<你的IP>:16099 扫码登录 QQ
+#   4) 打开 http://<你的IP>:16185 配置模型、装插件
+name: dafeiyu
+
+services:
+  astrbot:
+    image: ${MIRROR:-docker.io}/soulter/astrbot:${ASTRBOT_TAG:-latest}
+    container_name: astrbot
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ:-Asia/Shanghai}
+    ports:
+      - "${ASTRBOT_WEBUI_PORT:-16185}:6185"
+    volumes:
+      - ${DATA_ROOT:-./data}/astrbot:/AstrBot/data
+      - /etc/localtime:/etc/localtime:ro
+    networks: [dafeiyu]
+    depends_on: [ollama, asr]
+
+  napcat:
+    image: ${MIRROR:-docker.io}/mlikiowa/napcat-docker:${NAPCAT_TAG:-latest}
+    container_name: napcat
+    restart: unless-stopped
+    environment:
+      - NAPCAT_UID=${NAPCAT_UID:-1000}
+      - NAPCAT_GID=${NAPCAT_GID:-1000}
+      - MODE=astrbot
+      - TZ=${TZ:-Asia/Shanghai}
+    ports:
+      - "${NAPCAT_WEBUI_PORT:-16099}:6099"
+    volumes:
+      - ${DATA_ROOT:-./data}/napcat/config:/app/napcat/config
+      - ${DATA_ROOT:-./data}/ntqq:/app/.config/QQ
+      - ${DATA_ROOT:-./data}/astrbot:/AstrBot/data
+      - /etc/localtime:/etc/localtime:ro
+    networks: [dafeiyu]
+    depends_on: [astrbot]
+
+  ollama:
+    image: ${MIRROR:-docker.io}/ollama/ollama:${OLLAMA_TAG:-latest}
+    container_name: dafeiyu-ollama
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ${DATA_ROOT:-./data}/ollama:/root/.ollama
+    networks: [dafeiyu]
+
+  asr:
+    build: ./asr
+    container_name: dafeiyu-asr
+    restart: unless-stopped
+    environment:
+      - VOSK_MODEL_DIR=/models/vosk-model-cn
+      - PORT=9001
+    ports:
+      - "127.0.0.1:${ASR_PORT:-9001}:9001"
+    volumes:
+      - ${DATA_ROOT:-./data}/asr/models:/models
+    networks: [dafeiyu]
+
+  sovits:
+    # GPT-SoVITS 官方镜像较大；也可自行 build。不需要语音时可整段注释掉。
+    image: ${SOVITS_IMAGE:-docker.io/xxxxx/gpt-sovits:latest}
+    container_name: dafeiyu-sovits
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${SOVITS_PORT:-9880}:9880"
+    volumes:
+      - ${DATA_ROOT:-./data}/sovits:/workspace
+      - ${DATA_ROOT:-./data}/refaudio:/refaudio
+    networks: [dafeiyu]
+
+networks:
+  dafeiyu:
+    driver: bridge

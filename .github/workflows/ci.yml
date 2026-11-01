@@ -1,0 +1,33 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 语法检查
+        run: |
+          python - <<'PY'
+          import ast, glob, sys
+          bad = 0
+          for f in glob.glob("plugins/*/main.py") + glob.glob("asr/*.py"):
+              try:
+                  ast.parse(open(f, encoding="utf-8").read())
+                  print("ok", f)
+              except SyntaxError as e:
+                  bad += 1
+                  print("FAIL", f, e)
+          sys.exit(1 if bad else 0)
+          PY
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 校验 compose
+        run: docker compose -f docker-compose.yml config >/dev/null
