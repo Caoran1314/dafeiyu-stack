@@ -715,6 +715,10 @@ function onModelReady(root, gltf) {
   (gltf.animations || []).forEach(clip => { modelActions[clip.name] = clip; });
   modelCurrent = null;
   console.log('[room] 模型动作:', Object.keys(modelActions).join(', '));
+  if (typeof bh !== 'undefined' && bh.anchor) {
+    applyAnchor(bh.anchor, true);
+    if (bh.state === 'walk' && bh.target) playModel('walk');
+  }
 }
 
 function playModel(name, timeout) {
@@ -741,13 +745,18 @@ const POSE_ACTION = {
   pet: 'pet', yoga: 'sit', dresser: 'idle', window: 'idle', stand: 'idle'
 };
 const POSE_Y = {
-  lie: 0.62, sleep: 0.62, sitSofa: 0.55, sit: 0.02, pet: 0.02,
+  lie: 0.62, sleep: 0.62, sitSofa: 0.30, sit: 0.02, pet: 0.02,
   yoga: 0.02, dresser: 0.02, window: 0.02, stand: 0.02
 };
+
+// 人物模型开关：true = 用 model/character.glb，false = 用内置程序化小人
+// 现在脚本生成的占位模型观感不佳，先关掉；换成正式模型后改 true
+const USE_CHARACTER_GLB = false;
 
 function loadCharacter() {
   return new Promise(resolve => {
     const loader = new GLTFLoader();
+    if (!USE_CHARACTER_GLB) { resolve(false); return; }
     loader.load('./model/character.glb', gltf => {
       const root = gltf.scene;
       root.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
