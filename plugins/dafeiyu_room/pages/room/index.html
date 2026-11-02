@@ -709,6 +709,31 @@ function switchAction(slot) {
 }
 
 
+
+/* ============================ 猫窝 / 梳妆台 ============================ */
+const catBed = new THREE.Group();
+catBed.position.set(-2.95, 0, 0.05);
+room.add(catBed);
+catBed.add(put(softBox(0.82, 0.10, 0.66, S(clothTex, 0xcbb39a, .95), .14), 0, 0.06, 0));
+catBed.add(put(softBox(0.86, 0.20, 0.10, S(clothTex, 0xd9c6b0, .95), .08), 0, 0.14, -0.30));
+catBed.add(put(softBox(0.10, 0.20, 0.56, S(clothTex, 0xd9c6b0, .95), .08), -0.38, 0.14, 0));
+catBed.add(put(softBox(0.10, 0.20, 0.56, S(clothTex, 0xd9c6b0, .95), .08), 0.38, 0.14, 0));
+
+const dresser = new THREE.Group();
+dresser.position.set(2.95, 0, 1.85);
+dresser.rotation.y = -Math.PI / 2;
+room.add(dresser);
+dresser.add(put(softBox(1.1, 0.72, 0.46, M.wood, .03), 0, 0.36, 0));
+dresser.add(put(softBox(0.08, 0.86, 0.06, M.dark, .02), 0, 0.78, -0.2));
+const mirror = new THREE.Mesh(new THREE.CircleGeometry(0.26, 32),
+  new THREE.MeshStandardMaterial({ color: 0xbfe0ef, metalness: .7, roughness: .12 }));
+mirror.position.set(0, 1.12, -0.21);
+dresser.add(mirror);
+// 镜子边缘
+const mirrorRing = new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.018, 8, 40), M.dark);
+mirrorRing.position.copy(mirror.position);
+dresser.add(mirrorRing);
+
 /* ============================ 电视 ============================ */
 const tvUnit = new THREE.Group();
 tvUnit.position.set(-2.35, 0, 3.02);
@@ -739,6 +764,82 @@ function setTv(on) {
   tvGlow.intensity = tvOn ? 1.35 : 0.0;
 }
 
+
+/* ============================ 三只猫 ============================ */
+function buildCat(bodyColor, tailColor, scale) {
+  const g = new THREE.Group();
+  const fur = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: .92 });
+  const fur2 = new THREE.MeshStandardMaterial({ color: tailColor, roughness: .92 });
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 12), fur);
+  body.scale.set(1.0, 0.85, 1.45); body.position.y = 0.12; body.castShadow = true; g.add(body);
+  const head = new THREE.Group(); head.position.set(0, 0.20, 0.16); g.add(head);
+  const skull = new THREE.Mesh(new THREE.SphereGeometry(0.085, 16, 12), fur);
+  skull.scale.set(1, 0.95, 0.95); skull.castShadow = true; head.add(skull);
+  for (const sx of [-1, 1]) {
+    const ear = new THREE.Mesh(new THREE.ConeGeometry(0.038, 0.065, 4), fur);
+    ear.position.set(sx * 0.045, 0.075, -0.005); ear.rotation.z = sx * 0.22; head.add(ear);
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.014, 8, 8),
+      new THREE.MeshStandardMaterial({ color: 0x1c2a30 }));
+    eye.position.set(sx * 0.032, 0.012, 0.075); head.add(eye);
+  }
+  const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.02, 0.3, 8), fur2);
+  tail.position.set(0, 0.16, -0.19); tail.rotation.x = 1.15; g.add(tail);
+  for (const [dx, dz] of [[-0.07, 0.12], [0.07, 0.12], [-0.07, -0.1], [0.07, -0.1]]) {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.02, 0.11, 6), fur2);
+    leg.position.set(dx, 0.055, dz); g.add(leg);
+  }
+  g.scale.setScalar(scale || 1);
+  return { group: g, head, tail };
+}
+
+const CAT_SPOTS = [
+  { name: 'catbed', pos: [-2.95, 0.10, 0.05], rot: 0.4 },
+  { name: 'bedfoot', pos: [-1.15, 0.60, -1.35], rot: 2.4 },
+  { name: 'rug2', pos: [-1.45, 0.02, 1.75], rot: -0.6 },
+  { name: 'rug', pos: [-0.75, 0.02, 0.55], rot: 1.2 },
+  { name: 'window', pos: [-3.15, 0.02, -0.55], rot: 1.6 },
+];
+
+const cats = [
+  { c: buildCat(0xd8dde3, 0xa8b0ba, 1.15), name: '豆豆', spot: 0, target: 0, state: 'sleep', t: 0, phase: 0 },
+  { c: buildCat(0xf2ece4, 0xc9b8a6, 1.0), name: '妞妞', spot: 3, target: 3, state: 'walk', t: 0, phase: 2 },
+  { c: buildCat(0xf6d9a8, 0xd8a86a, 0.9), name: '点点', spot: 1, target: 1, state: 'sleep', t: 0, phase: 4 },
+];
+cats.forEach((cat, i) => {
+  const sp = CAT_SPOTS[cat.spot];
+  cat.c.group.position.set(sp.pos[0], sp.pos[1], sp.pos[2]);
+  cat.c.group.rotation.y = sp.rot;
+  scene.add(cat.c.group);
+});
+
+let catsActive = true;
+function updateCats(dt) {
+  if (!catsActive) return;
+  cats.forEach(cat => {
+    cat.t += dt;
+    const g = cat.c.group;
+    cat.c.tail.rotation.z = Math.sin(cat.t * 2.2 + cat.phase) * 0.25;
+    cat.c.head.rotation.y = Math.sin(cat.t * 0.7 + cat.phase) * 0.35;
+    if (cat.state === 'walk') {
+      const sp = CAT_SPOTS[cat.target];
+      const dx = sp.pos[0] - g.position.x, dz = sp.pos[2] - g.position.z;
+      const d = Math.hypot(dx, dz);
+      if (d < 0.06) { cat.state = 'sleep'; cat.spot = cat.target; cat.t = 0; }
+      else {
+        const v = 0.35 * dt;
+        g.position.x += dx / d * v; g.position.z += dz / d * v;
+        g.rotation.y = Math.atan2(dx, dz);
+        g.position.y = sp.pos[1] + Math.abs(Math.sin(cat.t * 9)) * 0.012;
+      }
+    } else if (cat.t > 12 + cat.phase * 4) {
+      // 醒了，换个地方
+      cat.state = 'walk';
+      cat.target = Math.floor(Math.random() * CAT_SPOTS.length);
+      cat.t = 0;
+    }
+  });
+}
+
 /* ============================ 姿势 ============================ */
 const POSE = {
   walk: { root: [0, 0.44, 1.6], rotX: 0, rotY: 0, hips: 0, thigh: 0, shin: 0, torso: 0.02,
@@ -755,7 +856,7 @@ const POSE = {
     armL: -0.5, armR: -0.5, armLZ: 0.16, armRZ: -0.16, fore: -1.0, head: -0.16, phone: 0 }
 };
 const MODE_POSE = { sleep: 'sleep', phone: 'lie', desk: 'sit', window: 'window', away: 'stand' };
-const MODE_ANCHOR = { sleep: 'sleep', phone: 'bed', desk: 'desk', window: 'window', tv: 'tv', away: 'center' };
+const MODE_ANCHOR = { sleep: 'sleep', phone: 'bed', desk: 'desk', window: 'window', tv: 'tv', away: 'center', bed: 'bed', sofa: 'sofa', catbed: 'catbed', dresser: 'dresser', rug: 'rug', read: 'sofa' };
 
 const cur = {
   root: new THREE.Vector3(POSE.sleep.root[0], POSE.sleep.root[1], POSE.sleep.root[2]),
@@ -799,6 +900,9 @@ applyPose(POSE.sleep, 1);
 /* ============================ 行为（走动 / 坐下 / 看电视） ============================ */
 const ANCHOR = {
   bed:   { pos: [-1.95, 0.66, -1.92], rotY: 0, pose: 'lie',  label: '躺床上刷手机' },
+  catbed:{ pos: [-2.78, 0.30, 0.30], rotY: -0.7, pose: 'pet',  label: '蹲下来撸猫' },
+  dresser:{ pos: [2.45, 0.44, 1.85], rotY: -1.57, pose: 'dresser', label: '在梳妆台前' },
+  rug:   { pos: [-0.55, 0.26, 0.30], rotY: 1.9, pose: 'yoga', label: '在地毯上拉伸' },
   sleep: { pos: [-1.95, 0.66, -1.92], rotY: 0, pose: 'sleep', label: '睡着了' },
   sofa:  { pos: [-2.35, 0.56, 1.15], rotY: 0.34, pose: 'sitSofa', label: '窝在沙发上' },
   tv:    { pos: [-2.35, 0.56, 1.15], rotY: 0.34, pose: 'sitSofa', label: '窝在沙发看电视' },
@@ -808,6 +912,19 @@ const ANCHOR = {
 };
 
 // 沙发坐姿：膝盖并拢向前，身体略后仰
+// 蹲下撸猫
+POSE.pet = { root: [-2.78, 0.30, 0.30], rotX: 0, rotY: -0.7, hips: 0.12,
+  thigh: -1.05, shin: 1.75, torso: 0.30, armL: -0.55, armR: -0.55,
+  armLZ: 0.22, armRZ: -0.22, fore: -0.55, head: 0.34, phone: 0 };
+// 梳妆台前
+POSE.dresser = { root: [2.45, 0.44, 1.85], rotX: 0, rotY: -1.57, hips: 0.02,
+  thigh: 0, shin: 0, torso: -0.03, armL: -0.85, armR: -0.85,
+  armLZ: 0.16, armRZ: -0.16, fore: -1.05, head: 0.10, phone: 0 };
+// 地毯上拉伸
+POSE.yoga = { root: [-0.55, 0.26, 0.30], rotX: 0, rotY: 1.9, hips: 0.05,
+  thigh: -1.35, shin: 1.45, torso: 0.06, armL: -1.45, armR: -1.45,
+  armLZ: 0.45, armRZ: -0.45, fore: -0.2, head: -0.12, phone: 0 };
+
 POSE.sitSofa = { root: [-2.35, 0.56, 1.15], rotX: 0, rotY: 0.34, hips: 0.02,
   thigh: -1.42, shin: 1.2, torso: -0.05, armL: -0.5, armR: -0.5,
   armLZ: 0.1, armRZ: -0.1, fore: -0.75, head: 0.02, phone: 0 };
@@ -892,10 +1009,13 @@ const CAM = {
   window: { pos: [-0.9, 1.25, 0.9], target: [-2.4, 0.9, -0.6] },
   away: { pos: [1.4, 1.3, 2.0], target: [-0.9, 0.7, -0.4] },
   tv: { pos: [-0.85, 1.42, 0.35], target: [-2.30, 0.90, 2.10] },
-  sofa: { pos: [-1.15, 1.35, 2.95], target: [-2.32, 0.92, 1.15] }
+  sofa: { pos: [-1.15, 1.35, 2.95], target: [-2.32, 0.92, 1.15] },
+  catbed: { pos: [-1.45, 1.05, -0.85], target: [-2.88, 0.32, 0.08] },
+  dresser: { pos: [1.25, 1.30, 1.85], target: [2.55, 0.95, 1.85] },
+  rug: { pos: [0.75, 1.35, 1.65], target: [-0.55, 0.35, 0.30] }
 };
 let camGoal = CAM.sleep, camBlend = 0;
-const ANCHOR_CAM = { tv: 'tv', sofa: 'sofa', bed: 'phone', sleep: 'sleep', desk: 'desk', window: 'window', center: 'away' };
+const ANCHOR_CAM = { tv: 'tv', sofa: 'sofa', bed: 'phone', sleep: 'sleep', desk: 'desk', window: 'window', center: 'away', catbed: 'catbed', dresser: 'dresser', rug: 'rug' };
 
 /* ============================ 灯光 ============================ */
 scene.add(new THREE.HemisphereLight(0xdff0ff, 0x9fb4c6, 1.05));
@@ -979,6 +1099,8 @@ function tick(now) {
   const e = camBlend * camBlend * (3 - 2 * camBlend);
   camera.position.lerp(new THREE.Vector3(camGoal.pos[0], camGoal.pos[1], camGoal.pos[2]), 0.02 * e);
   controls.target.lerp(new THREE.Vector3(camGoal.target[0], camGoal.target[1], camGoal.target[2]), 0.024 * e);
+
+  updateCats(_dt);
 
   if (mixer) {
     mixer.update(Math.min(0.05, (now - (tick._last || now)) / 1000));

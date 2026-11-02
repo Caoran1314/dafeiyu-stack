@@ -75,15 +75,32 @@ class Room(Star):
 
     # ---------------------------------------------------------------- 状态
 
+    # 她的一天：按时段决定默认在哪、做什么
+    DAY_PLAN = [
+        (0, 7, "sleep", "睡着了"),
+        (7, 9, "window", "刚起来，站窗边发呆"),
+        (9, 12, "desk", "在电脑前工作"),
+        (12, 14, "sofa", "窝沙发吃午饭"),
+        (14, 18, "desk", "在电脑前工作"),
+        (18, 20, "catbed", "蹲下来撸猫"),
+        (20, 22, "tv", "窝在沙发看电视"),
+        (22, 23, "dresser", "在梳妆台前收拾"),
+        (23, 24, "bed", "躺床上刷手机"),
+    ]
+
     def _base_mode(self) -> str:
         h = time.localtime().tm_hour
-        if 0 <= h < 8:
-            return "sleep"
-        if 8 <= h < 19:
-            return "desk"
-        if 19 <= h < 24:
-            return "phone"
-        return "sleep"
+        for a, b, mode, _ in self.DAY_PLAN:
+            if a <= h < b:
+                return mode
+        return "bed"
+
+    def _base_label(self) -> str:
+        h = time.localtime().tm_hour
+        for a, b, mode, label in self.DAY_PLAN:
+            if a <= h < b:
+                return label
+        return "在房间"
 
     def _compute_mode(self) -> str:
         now = time.time()
@@ -102,7 +119,14 @@ class Room(Star):
             "desk": "在电脑前",
             "window": "站在窗边发呆",
             "away": "不在房间",
-        }.get(mode, "在房间")
+            "sofa": "窝在沙发上",
+            "tv": "窝在沙发看电视",
+            "catbed": "蹲下来撸猫",
+            "dresser": "在梳妆台前",
+            "rug": "在地毯上拉伸",
+            "bed": "躺床上刷手机",
+            "read": "靠床上看书",
+        }.get(mode, self._base_label())
 
     def _flush(self) -> dict:
         self.mode = self._compute_mode()
@@ -190,7 +214,9 @@ class Room(Star):
             yield event.plain_result("已回到正常状态。")
             return
         if a:
-            app = {"看电视": "tv", "去沙发": "sofa", "沙发": "sofa",
+            app = {"撸猫": "catbed", "看猫": "catbed", "梳妆": "dresser",
+                   "拉伸": "rug", "瑜伽": "rug", "看书": "read",
+                   "看电视": "tv", "去沙发": "sofa", "沙发": "sofa",
                    "刷抖音": "douyin", "抖音": "douyin", "刷b站": "bilibili", "b站": "bilibili",
                    "刷快手": "kuaishou", "刷小红书": "xiaohongshu", "刷微博": "weibo",
                    "打游戏": "game", "看书": "reading", "听歌": "music"}.get(a, "douyin")
@@ -222,6 +248,9 @@ class Room(Star):
     ACTIVITY_FILE = os.path.join(DATA_DIR, "activity.json")
 
     APP_LABEL = {
+        "catbed": ("蹲下来撸猫", "catbed"),
+        "dresser": ("在梳妆台前", "dresser"),
+        "rug": ("在地毯上拉伸", "rug"),
         "tv": ("窝在沙发看电视", "tv"),
         "sofa": ("窝在沙发上", "sofa"),
         "douyin": ("刷抖音", "phone"),
@@ -263,6 +292,9 @@ class Room(Star):
         bubbles = a.get("bubbles")
         if not isinstance(bubbles, list) or not bubbles:
             bubbles = {
+                "catbed": ["豆豆你又胖了", "妞妞别咬我手指", "点点过来"],
+                "dresser": ["头发又翘了", "涂个口红"],
+                "rug": ["伸个懒腰", "坐久了腰疼"],
                 "tv": ["这剧还挺上头", "换个台看看", "广告好长啊"],
                 "sofa": ["瘫一会儿", "沙发好软"],
                 "douyin": ["这个笑死我", "又刷到卖货的", "再看一条就睡"],
