@@ -82,6 +82,13 @@ controls.maxDistance = 8;
 controls.maxPolarAngle = Math.PI * 0.5;
 controls.enablePan = false;
 
+// 调试俯视：访问 index.html?cam=top
+const TOPVIEW = new URLSearchParams(location.search).get('cam') === 'top';
+if (TOPVIEW) {
+  camera.position.set(0, 11, 0.6);
+  controls.target.set(0, 0, 0.4);
+}
+
 // 手动转动视角时，暂停自动跟随；20 秒没动或状态切换后恢复
 let camAuto = true;
 let camHoldAt = 0;
@@ -208,22 +215,23 @@ const put = (obj, x, y, z) => { obj.position.set(x, y, z); return obj; };
 const room = new THREE.Group();
 scene.add(room);
 
-const floor = new THREE.Mesh(new THREE.PlaneGeometry(8, 7), M.marble);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(16.8, 6.6), M.marble);
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 room.add(floor);
 
 const rug = new THREE.Mesh(new THREE.CircleGeometry(1.3, 64), S(clothTex, 0xe9f3fa, 1));
 rug.rotation.x = -Math.PI / 2;
-rug.position.set(-0.5, 0.012, 0.2);
+rug.position.set(-1.35, 0.012, 1.95);
 rug.receiveShadow = true;
 room.add(rug);
 
-room.add(put(softBox(8, 3.0, 0.16, M.wall, .02), 0, 1.5, -3.1));
-room.add(put(softBox(0.16, 3.0, 7, M.wall, .02), 3.6, 1.5, -0.4));
-room.add(put(softBox(0.16, 3.0, 7, M.wall, .02), -3.6, 1.5, -0.4));
+room.add(put(softBox(16.8, 3.0, 0.16, M.wall, .02), 0, 1.5, -3.1));
+room.add(put(softBox(0.16, 3.0, 6.6, M.wall, .02), -8.4, 1.5, 0.2));
+room.add(put(softBox(0.16, 3.0, 6.6, M.wall, .02), 8.4, 1.5, 0.2));
 
-const ceil = new THREE.Mesh(new THREE.PlaneGeometry(8, 7), S(wallTex, 0xbfb4a6, .98));
+room.add(put(softBox(16.8, 3.0, 0.16, M.wall, .02), 0, 1.5, 3.5));
+const ceil = new THREE.Mesh(new THREE.PlaneGeometry(16.8, 6.6), S(wallTex, 0xbfb4a6, .98));
 ceil.rotation.x = Math.PI / 2;
 ceil.position.y = 3.0;
 room.add(ceil);
@@ -247,7 +255,8 @@ const cityTex = canvasTex(512, 512, (g, w, h) => {
 
 const winGlass = new THREE.Mesh(new THREE.PlaneGeometry(2.1, 1.55),
   new THREE.MeshBasicMaterial({ map: cityTex, toneMapped: false }));
-winGlass.position.set(-3.5, 1.62, -0.5);
+winGlass.position.set(-8.25, 1.62, 2.2);
+winGlass.rotation.y = Math.PI / 2;
 winGlass.rotation.y = Math.PI / 2;
 room.add(winGlass);
 
@@ -259,12 +268,13 @@ room.add(put(softBox(0.06, 1.62, 0.06, M.metal, .01), -3.44, 1.62, -1.55));
 room.add(put(softBox(0.06, 1.62, 0.06, M.metal, .01), -3.44, 1.62, 0.55));
 
 const winLight = new THREE.PointLight(0x7fc8f0, 5.5, 7, 2);
-winLight.position.set(-3.0, 1.7, -0.5);
+winLight.position.set(-7.9, 1.7, 2.2);
 room.add(winLight);
 
 /* 床 */
 const bed = new THREE.Group();
-bed.position.set(-1.95, 0, -2.05);
+bed.position.set(-6.05, 0, 2.05);
+bed.rotation.y = Math.PI / 2;
 room.add(bed);
 bed.add(put(softBox(2.1, 0.34, 1.55, M.dark, .05), 0, 0.17, 0));
 bed.add(put(softBox(2.02, 0.24, 1.46, M.linen, .09), 0, 0.42, 0));
@@ -275,7 +285,7 @@ bed.add(put(softBox(2.12, 0.72, 0.12, M.wood, .04), 0, 0.62, -0.82));
 
 /* 沙发 */
 const sofa = new THREE.Group();
-sofa.position.set(-2.35, 0, 1.05);
+sofa.position.set(-2.15, 0, 2.05);
 sofa.rotation.y = 0.34;
 room.add(sofa);
 sofa.add(put(softBox(1.9, 0.34, 0.9, M.cream, .12), 0, 0.32, 0));
@@ -290,7 +300,7 @@ sofa.add(put(softBox(0.4, 0.16, 0.3, S(clothTex, 0xc9dff0, .98), .08), 0.42, 0.5
 
 /* 橱柜 */
 const cab = new THREE.Group();
-cab.position.set(3.2, 0, -1.2);
+cab.position.set(-8.0, 0, -1.6);
 room.add(cab);
 cab.add(put(softBox(0.62, 2.5, 2.7, M.wood, .03), 0, 1.25, 0));
 cab.add(put(softBox(0.68, 0.05, 2.2, S(woodTex, 0x9d8468, .5), .01), -0.04, 1.42, 0.1));
@@ -301,7 +311,8 @@ cab.add(put(softBox(0.3, 0.04, 0.4, M.dark, .01), -0.12, 1.53, -0.5));
 
 /* 桌 + 显示器 + 椅 */
 const desk = new THREE.Group();
-desk.position.set(1.65, 0, -2.3);
+desk.position.set(5.9, 0, 2.15);
+desk.rotation.y = -Math.PI / 2;
 room.add(desk);
 desk.add(put(softBox(1.75, 0.07, 0.78, M.wood, .02), 0, 0.76, 0));
 for (const p of [[-0.8, -0.32], [0.8, -0.32], [-0.8, 0.32], [0.8, 0.32]])
@@ -716,9 +727,85 @@ function switchAction(slot) {
 
 
 
+
+/* ============================ 电竞房 ============================ */
+const rgbMat = new THREE.MeshStandardMaterial({
+  color: 0x1a2330, emissive: 0x38d0ff, emissiveIntensity: 1.1, roughness: .5
+});
+const pc = new THREE.Group();
+pc.position.set(7.55, 0, 2.15);
+pc.rotation.y = -Math.PI / 2;
+room.add(pc);
+pc.add(put(softBox(0.42, 0.9, 0.9, M.dark, .03), 0, 0.45, 0));
+const pcGlass = new THREE.Mesh(new THREE.PlaneGeometry(0.78, 0.78), rgbMat);
+pcGlass.position.set(0.215, 0.48, 0);
+pcGlass.rotation.y = Math.PI / 2;
+pc.add(pcGlass);
+const pcLight = new THREE.PointLight(0x38d0ff, 1.2, 2.4, 2);
+pcLight.position.set(0.4, 0.5, 0);
+pc.add(pcLight);
+
+// 电竞椅
+const gchair = new THREE.Group();
+gchair.position.set(5.2, 0, 1.35);
+gchair.rotation.y = Math.PI;
+room.add(gchair);
+gchair.add(put(softBox(0.52, 0.1, 0.5, M.dark, .06), 0, 0.46, 0));
+gchair.add(put(softBox(0.52, 0.62, 0.1, M.dark, .06), 0, 0.78, -0.2));
+gchair.add(put(softBox(0.08, 0.36, 0.08, M.dark, .02), 0, 0.2, 0));
+gchair.add(put(softBox(0.44, 0.06, 0.44, M.dark, .02), 0, 0.04, 0));
+
+// 灯带 + 海报
+room.add(put(softBox(3.2, 0.05, 0.05, rgbMat, .01), 5.9, 2.45, 3.3));
+const poster = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.78),
+  new THREE.MeshStandardMaterial({ color: 0x2a3550, emissive: 0x1c3a55, emissiveIntensity: .6 }));
+poster.position.set(7.9, 1.75, 3.42);
+poster.rotation.y = Math.PI;
+room.add(poster);
+
+/* ============================ 猫房 ============================ */
+function catTree(x, z) {
+  const g = new THREE.Group();
+  g.position.set(x, 0, z);
+  room.add(g);
+  g.add(put(softBox(0.62, 0.08, 0.62, S(clothTex, 0xcdbba6, .95), .02), 0, 0.04, 0));
+  g.add(put(softBox(0.1, 1.35, 0.1, S(clothTex, 0xa89583, .9), .03), 0, 0.72, 0));
+  g.add(put(softBox(0.5, 0.07, 0.5, S(clothTex, 0xd6c8b6, .95), .02), 0, 1.0, 0));
+  g.add(put(softBox(0.46, 0.07, 0.46, S(clothTex, 0xd6c8b6, .95), .02), 0.18, 1.42, 0.1));
+  // 猫窝
+  g.add(put(softBox(0.5, 0.1, 0.44, S(clothTex, 0xdccfbe, .95), .1), -0.16, 1.46, -0.12));
+  return g;
+}
+catTree(-2.9, -2.55);
+catTree(0.9, -2.5);
+
+// 第二个猫窝 + 猫砂盆 + 玩具
+const catBed2 = new THREE.Group();
+catBed2.position.set(1.5, 0, -1.6);
+room.add(catBed2);
+catBed2.add(put(softBox(0.72, 0.09, 0.58, S(clothTex, 0xc7b6a2, .95), .12), 0, 0.05, 0));
+catBed2.add(put(softBox(0.76, 0.18, 0.08, S(clothTex, 0xd8cbb9, .95), .08), 0, 0.13, -0.27));
+
+const litter = new THREE.Group();
+litter.position.set(-3.15, 0, -0.55);
+room.add(litter);
+litter.add(put(softBox(0.56, 0.24, 0.44, M.linen, .04), 0, 0.12, 0));
+
+for (const [tx, tz, tc] of [[-1.6, -0.9, 0xff9f7a], [0.2, -0.75, 0x9fe6ff], [-2.2, -1.5, 0xffd166]]) {
+  const toy = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 10),
+    new THREE.MeshStandardMaterial({ color: tc, roughness: .6 }));
+  toy.position.set(tx, 0.07, tz);
+  room.add(toy);
+}
+
+// 猫爬架上的小灯，晚上亮
+const catLight = new THREE.PointLight(0xffd9a0, 0.7, 3.2, 2);
+catLight.position.set(-1.2, 2.1, -2.0);
+room.add(catLight);
+
 /* ============================ 猫窝 / 梳妆台 ============================ */
 const catBed = new THREE.Group();
-catBed.position.set(-2.95, 0, 0.05);
+catBed.position.set(-2.4, 0, -1.9);
 room.add(catBed);
 catBed.add(put(softBox(0.82, 0.10, 0.66, S(clothTex, 0xcbb39a, .95), .14), 0, 0.06, 0));
 catBed.add(put(softBox(0.86, 0.20, 0.10, S(clothTex, 0xd9c6b0, .95), .08), 0, 0.14, -0.30));
@@ -726,7 +813,7 @@ catBed.add(put(softBox(0.10, 0.20, 0.56, S(clothTex, 0xd9c6b0, .95), .08), -0.38
 catBed.add(put(softBox(0.10, 0.20, 0.56, S(clothTex, 0xd9c6b0, .95), .08), 0.38, 0.14, 0));
 
 const dresser = new THREE.Group();
-dresser.position.set(2.95, 0, 1.85);
+dresser.position.set(-7.9, 0, 0.35);
 dresser.rotation.y = -Math.PI / 2;
 room.add(dresser);
 dresser.add(put(softBox(1.1, 0.72, 0.46, M.wood, .03), 0, 0.36, 0));
@@ -740,9 +827,46 @@ const mirrorRing = new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.018, 8, 40), M
 mirrorRing.position.copy(mirror.position);
 dresser.add(mirrorRing);
 
+
+/* ============================ 三室一厅隔墙 ============================ */
+function partition(x1, z1, x2, z2, doorAt, doorWidth, doorAxis) {
+  // doorAxis: 'x' 表示门洞沿 x 方向开在这段墙里
+  const wallH = 2.7;
+  if (Math.abs(z2 - z1) < 0.01) {
+    // 沿 x 的墙
+    const a = Math.min(x1, x2), b = Math.max(x1, x2);
+    if (doorAxis === 'x' && doorAt > a && doorAt < b) {
+      const half = doorWidth / 2;
+      room.add(put(softBox(doorAt - half - a, wallH, 0.12, M.wall, .02), (a + doorAt - half) / 2, wallH / 2, z1));
+      room.add(put(softBox(b - doorAt - half, wallH, 0.12, M.wall, .02), (b + doorAt + half) / 2, wallH / 2, z1));
+      room.add(put(softBox(doorWidth, 0.5, 0.12, M.wall, .02), doorAt, wallH - 0.25, z1));
+    } else {
+      room.add(put(softBox(b - a, wallH, 0.12, M.wall, .02), (a + b) / 2, wallH / 2, z1));
+    }
+  } else {
+    // 沿 z 的墙
+    const a = Math.min(z1, z2), b = Math.max(z1, z2);
+    if (doorAxis === 'z' && doorAt > a && doorAt < b) {
+      const half = doorWidth / 2;
+      room.add(put(softBox(0.12, wallH, doorAt - half - a, M.wall, .02), x1, wallH / 2, (a + doorAt - half) / 2));
+      room.add(put(softBox(0.12, wallH, b - doorAt - half, M.wall, .02), x1, wallH / 2, (b + doorAt + half) / 2));
+      room.add(put(softBox(0.12, 0.5, doorWidth, M.wall, .02), x1, wallH - 0.25, doorAt));
+    } else {
+      room.add(put(softBox(0.12, wallH, b - a, M.wall, .02), x1, wallH / 2, (a + b) / 2));
+    }
+  }
+}
+
+// 主卧 | 客厅/猫房 之间（x = -3.6，门在 z=1.6）
+partition(-3.6, -3.1, -3.6, 3.5, 1.6, 1.0, 'z');
+// 客厅/猫房 | 电竞房 之间（x = 2.0，门在 z=1.2）
+partition(2.0, -3.1, 2.0, 3.5, 1.2, 1.0, 'z');
+// 猫房 | 客厅 之间（z = 0.5，x 在 -3.6..2.0，门在 x=-1.2）
+partition(-3.6, 0.5, 2.0, 0.5, -1.2, 1.1, 'x');
+
 /* ============================ 电视 ============================ */
 const tvUnit = new THREE.Group();
-tvUnit.position.set(-2.35, 0, 3.02);
+tvUnit.position.set(-2.15, 0, 3.30);
 tvUnit.rotation.y = Math.PI;
 room.add(tvUnit);
 tvUnit.add(put(softBox(1.7, 0.42, 0.42, M.wood, .04), 0, 0.21, 0));
@@ -799,11 +923,11 @@ function buildCat(bodyColor, tailColor, scale) {
 }
 
 const CAT_SPOTS = [
-  { name: 'catbed', pos: [-2.95, 0.10, 0.05], rot: 0.4 },
-  { name: 'bedfoot', pos: [-1.15, 0.60, -1.35], rot: 2.4 },
-  { name: 'rug2', pos: [-1.45, 0.02, 1.75], rot: -0.6 },
-  { name: 'rug', pos: [-0.75, 0.02, 0.55], rot: 1.2 },
-  { name: 'window', pos: [-3.15, 0.02, -0.55], rot: 1.6 },
+  { name: 'catbed', pos: [-2.4, 0.10, -1.9], rot: 0.4 },
+  { name: 'bed2', pos: [1.5, 0.10, -1.6], rot: 2.4 },
+  { name: 'tree1', pos: [-2.9, 1.5, -2.55], rot: -0.6 },
+  { name: 'tree2', pos: [0.9, 1.5, -2.5], rot: 1.2 },
+  { name: 'living', pos: [-1.35, 0.02, 2.0], rot: 1.6 },
 ];
 
 const cats = [
@@ -852,17 +976,17 @@ const POSE = {
     armL: 0.05, armR: 0.05, armLZ: 0.2, armRZ: -0.2, fore: -0.2, head: 0, phone: 0 },
   stand: { root: [-1.0, 0.44, 0.2], rotX: 0, rotY: 0, hips: 0, thigh: 0, shin: 0, torso: 0,
     armL: 0.05, armR: 0.05, armLZ: 0.24, armRZ: -0.24, fore: -0.15, head: 0, phone: 0 },
-  sit: { root: [1.65, 0.52, -1.34], rotX: 0, rotY: Math.PI, hips: 0.04, thigh: -1.5, shin: 1.42, torso: 0.14,
+  sit: { root: [5.25, 0.52, 1.4], rotX: 0, rotY: Math.PI, hips: 0.04, thigh: -1.5, shin: 1.42, torso: 0.14,
     armL: -0.95, armR: -0.95, armLZ: 0.12, armRZ: -0.12, fore: -0.9, head: -0.04, phone: 0.1 },
-  lie: { root: [-1.95, 0.66, -1.92], rotX: -Math.PI / 2, rotY: 0, hips: 0.05, thigh: -0.14, shin: 0.26, torso: 0.03,
+  lie: { root: [-5.55, 0.66, 2.05], rotX: -Math.PI / 2, rotY: -Math.PI / 2, hips: 0.05, thigh: -0.14, shin: 0.26, torso: 0.03,
     armL: -0.12, armR: -0.55, armLZ: 0.14, armRZ: -0.14, fore: -0.45, head: 0.12, phone: 2.2 },
-  sleep: { root: [-1.95, 0.66, -1.92], rotX: -Math.PI / 2, rotY: 0, hips: 0.05, thigh: -0.14, shin: 0.24, torso: 0.03,
+  sleep: { root: [-5.55, 0.66, 2.05], rotX: -Math.PI / 2, rotY: -Math.PI / 2, hips: 0.05, thigh: -0.14, shin: 0.24, torso: 0.03,
     armL: -0.12, armR: -0.12, armLZ: 0.14, armRZ: -0.14, fore: -0.3, head: 0.12, phone: 0 },
-  window: { root: [-2.9, 0.44, -0.7], rotX: 0, rotY: 0.9, hips: 0, thigh: 0, shin: 0, torso: 0.05,
+  window: { root: [-7.6, 0.44, 2.15], rotX: 0, rotY: 1.4, hips: 0, thigh: 0, shin: 0, torso: 0.05,
     armL: -0.5, armR: -0.5, armLZ: 0.16, armRZ: -0.16, fore: -1.0, head: -0.16, phone: 0 }
 };
 const MODE_POSE = { sleep: 'sleep', phone: 'lie', desk: 'sit', window: 'window', away: 'stand' };
-const MODE_ANCHOR = { sleep: 'sleep', phone: 'bed', desk: 'desk', window: 'window', tv: 'tv', away: 'away', bed: 'bed', sofa: 'sofa', catbed: 'catbed', dresser: 'dresser', rug: 'rug', read: 'sofa' };
+const MODE_ANCHOR = { sleep: 'sleep', phone: 'bed', desk: 'gaming', gaming: 'gaming', window: 'window', tv: 'tv', away: 'away', bed: 'bed', sofa: 'sofa', catbed: 'catbed', catroom: 'catroom', dresser: 'dresser', rug: 'rug', read: 'sofa' };
 
 const cur = {
   root: new THREE.Vector3(POSE.sleep.root[0], POSE.sleep.root[1], POSE.sleep.root[2]),
@@ -905,33 +1029,35 @@ applyPose(POSE.sleep, 1);
 
 /* ============================ 行为（走动 / 坐下 / 看电视） ============================ */
 const ANCHOR = {
-  bed:   { pos: [-1.95, 0.66, -1.92], rotY: 0, pose: 'lie',  label: '躺床上刷手机' },
-  catbed:{ pos: [-2.78, 0.30, 0.30], rotY: -0.7, pose: 'pet',  label: '蹲下来撸猫' },
-  dresser:{ pos: [2.45, 0.44, 1.85], rotY: -1.57, pose: 'dresser', label: '在梳妆台前' },
-  rug:   { pos: [-0.55, 0.26, 0.30], rotY: 1.9, pose: 'yoga', label: '在地毯上拉伸' },
-  sleep: { pos: [-1.95, 0.66, -1.92], rotY: 0, pose: 'sleep', label: '睡着了' },
-  sofa:  { pos: [-2.35, 0.56, 1.15], rotY: 0.34, pose: 'sitSofa', label: '窝在沙发上' },
-  tv:    { pos: [-2.35, 0.56, 1.15], rotY: 0.34, pose: 'sitSofa', label: '窝在沙发看电视' },
-  desk:  { pos: [1.65, 0.52, -1.34], rotY: Math.PI, pose: 'sit', label: '坐在电脑前' },
-  window:{ pos: [-2.9, 0.44, -0.7], rotY: 0.9, pose: 'window', label: '窗边发呆' },
+  bed:   { pos: [-5.55, 0.66, 2.05], rotY: -Math.PI / 2, pose: 'lie', label: '躺床上刷手机' },
+  catbed:{ pos: [-2.45, 0.30, -1.35], rotY: 0.2, pose: 'pet',  label: '在猫房撸猫' },
+  catroom:{ pos: [0.2, 0.30, -1.15], rotY: 1.2, pose: 'pet', label: '在猫房陪猫' },
+  dresser:{ pos: [-7.5, 0.44, 0.35], rotY: -1.57, pose: 'dresser', label: '在梳妆台前' },
+  rug:   { pos: [-1.35, 0.26, 1.95], rotY: 1.9, pose: 'yoga', label: '在地毯上拉伸' },
+  sleep: { pos: [-5.55, 0.66, 2.05], rotY: -Math.PI / 2, pose: 'sleep', label: '睡着了' },
+  sofa:  { pos: [-2.15, 0.56, 2.05], rotY: 0.34, pose: 'sitSofa', label: '窝在沙发上' },
+  tv:    { pos: [-2.15, 0.56, 2.05], rotY: 0.34, pose: 'sitSofa', label: '窝在沙发看电视' },
+  desk:  { pos: [5.25, 0.52, 1.4], rotY: Math.PI, pose: 'sit', label: '在电竞房打游戏' },
+  gaming:{ pos: [5.25, 0.52, 1.4], rotY: Math.PI, pose: 'sit', label: '在电竞房打游戏' },
+  window:{ pos: [-7.6, 0.44, 2.15], rotY: 1.4, pose: 'window', label: '主卧窗边发呆' },
   center:{ pos: [-0.9, 0.44, 0.4], rotY: 0.2, pose: 'stand', label: '站在房间中间' }
 };
 
 // 沙发坐姿：膝盖并拢向前，身体略后仰
 // 蹲下撸猫
-POSE.pet = { root: [-2.78, 0.30, 0.30], rotX: 0, rotY: -0.7, hips: 0.12,
+POSE.pet = { root: [-2.45, 0.30, -1.35], rotX: 0, rotY: 0.2, hips: 0.12,
   thigh: -1.05, shin: 1.75, torso: 0.30, armL: -0.55, armR: -0.55,
   armLZ: 0.22, armRZ: -0.22, fore: -0.55, head: 0.34, phone: 0 };
 // 梳妆台前
-POSE.dresser = { root: [2.45, 0.44, 1.85], rotX: 0, rotY: -1.57, hips: 0.02,
+POSE.dresser = { root: [-7.5, 0.44, 0.35], rotX: 0, rotY: -1.57, hips: 0.02,
   thigh: 0, shin: 0, torso: -0.03, armL: -0.85, armR: -0.85,
   armLZ: 0.16, armRZ: -0.16, fore: -1.05, head: 0.10, phone: 0 };
 // 地毯上拉伸
-POSE.yoga = { root: [-0.55, 0.26, 0.30], rotX: 0, rotY: 1.9, hips: 0.05,
+POSE.yoga = { root: [-1.35, 0.26, 1.95], rotX: 0, rotY: 1.9, hips: 0.05,
   thigh: -1.35, shin: 1.45, torso: 0.06, armL: -1.45, armR: -1.45,
   armLZ: 0.45, armRZ: -0.45, fore: -0.2, head: -0.12, phone: 0 };
 
-POSE.sitSofa = { root: [-2.35, 0.56, 1.15], rotX: 0, rotY: 0.34, hips: 0.02,
+POSE.sitSofa = { root: [-2.15, 0.56, 2.05], rotX: 0, rotY: 0.34, hips: 0.02,
   thigh: -1.42, shin: 1.2, torso: -0.05, armL: -0.5, armR: -0.5,
   armLZ: 0.1, armRZ: -0.1, fore: -0.75, head: 0.02, phone: 0 };
 
@@ -944,10 +1070,49 @@ const bh = {
   walkPhase: 0
 };
 
+
+
+function clampToRoom(px, pz, ax, az) {
+  // 按锚点所在房间给出可用范围，保证相机不被塞进墙里
+  const M = 0.28;
+  let x1 = -8.4, x2 = 8.4, z1 = -3.1, z2 = 3.5;
+  if (ax < -3.6) {            // 主卧
+    x1 = -8.4; x2 = -3.6; z1 = -3.1; z2 = 3.5;
+  } else if (ax > 2.0) {      // 电竞房
+    x1 = 2.0; x2 = 8.4; z1 = -3.1; z2 = 3.5;
+  } else if (az < 0.5) {      // 猫房
+    x1 = -3.6; x2 = 2.0; z1 = -3.1; z2 = 0.5;
+  } else {                    // 客厅
+    x1 = -3.6; x2 = 2.0; z1 = 0.5; z2 = 3.5;
+  }
+  return [Math.min(x2 - M, Math.max(x1 + M, px)),
+          Math.min(z2 - M, Math.max(z1 + M, pz))];
+}
+
+function autoCam(anchorName) {
+  const a = ANCHOR[anchorName];
+  if (!a) return null;
+  const dist = a.camDist || 2.6;
+  const ry = a.rotY || 0;
+  const bx = Math.sin(ry), bz = Math.cos(ry);
+  const raw = [a.pos[0] - bx * dist * 0.85 + bz * 0.9,
+               a.pos[2] - bz * dist * 0.85 - bx * 0.9];
+  const cl = clampToRoom(raw[0], raw[1], a.pos[0], a.pos[2]);
+  return {
+    pos: [cl[0], a.pos[1] + (a.camH || 1.15), cl[1]],
+    target: [a.pos[0], a.pos[1] + 0.28, a.pos[2]]
+  };
+}
+
 function setGirlVisible(v) {
   girl.visible = v;
   if (contact) contact.visible = v;
 }
+
+window.__dbg = () => ({ state: bh.state, anchor: bh.anchor,
+  pos: girl.position.toArray().map(v => +v.toFixed(2)),
+  rotX: +cur.rotX.toFixed(2), rotY: +girl.rotation.y.toFixed(2),
+  visible: girl.visible });
 
 function applyAnchor(name, instant) {
   if (name === 'away') {
@@ -971,7 +1136,7 @@ function applyAnchor(name, instant) {
   bh.anchor = name;
   const camName = ANCHOR_CAM[name];
   camAuto = true;
-  if (camName && CAM[camName]) { camGoal = CAM[camName]; camBlend = 0; }
+  if (camName && CAM[camName]) { camGoal = CAM[camName]; camBlend = 0; camSnap = true; }
   if (ANCHOR_CAM[name] && CAM[ANCHOR_CAM[name]]) { camGoal = CAM[ANCHOR_CAM[name]]; camBlend = 0; }
   setTv(name === 'tv');
   if (instant) { applyPose(p, 1); }
@@ -1028,19 +1193,22 @@ function walkStep(dt) {
 
 /* ============================ 相机 ============================ */
 const CAM = {
-  sleep: { pos: [-0.2, 1.05, 0.25], target: [-1.95, 0.65, -1.95] },
-  phone: { pos: [-0.35, 0.95, 0.05], target: [-1.95, 0.62, -2.0] },
-  desk: { pos: [2.25, 1.2, 0.6], target: [1.62, 0.85, -1.85] },
-  window: { pos: [-0.9, 1.25, 0.9], target: [-2.4, 0.9, -0.6] },
-  away: { pos: [1.4, 1.3, 2.0], target: [-0.9, 0.7, -0.4] },
-  tv: { pos: [-0.85, 1.42, 0.35], target: [-2.30, 0.90, 2.10] },
-  sofa: { pos: [-1.15, 1.35, 2.95], target: [-2.32, 0.92, 1.15] },
-  catbed: { pos: [-1.45, 1.05, -0.85], target: [-2.88, 0.32, 0.08] },
-  dresser: { pos: [1.25, 1.30, 1.85], target: [2.55, 0.95, 1.85] },
-  rug: { pos: [0.75, 1.35, 1.65], target: [-0.55, 0.35, 0.30] }
+  sleep: { pos: [-4.05, 1.45, 3.25], target: [-5.75, 0.80, 2.05] },
+  phone: { pos: [-4.05, 1.45, 3.25], target: [-5.75, 0.80, 2.05] },
+  desk: { pos: [2.45, 1.62, -0.45], target: [5.75, 0.92, 2.05] },
+  window: { pos: [-4.35, 1.50, 2.30], target: [-7.75, 0.95, 2.15] },
+  away: { pos: [0.6, 3.6, 6.2], target: [-0.4, 0.6, 0.4] },
+  tv: { pos: [0.8, 1.50, 1.15], target: [-2.15, 0.95, 2.75] },
+  sofa: { pos: [0.8, 1.50, 1.15], target: [-2.15, 0.95, 2.75] },
+  catbed: { pos: [1.55, 1.35, -2.55], target: [-2.45, 0.55, -1.45] },
+  dresser: { pos: [-6.05, 1.40, 1.05], target: [-7.60, 0.95, 0.35] },
+  rug: { pos: [0.75, 1.60, 3.15], target: [-1.40, 0.40, 1.95] },
+  gaming: { pos: [2.45, 1.62, -0.45], target: [5.75, 0.92, 2.05] },
+  catroom: { pos: [1.55, 1.35, -2.55], target: [-2.45, 0.55, -1.45] }
 };
 let camGoal = CAM.sleep, camBlend = 0;
-const ANCHOR_CAM = { tv: 'tv', sofa: 'sofa', bed: 'phone', sleep: 'sleep', desk: 'desk', window: 'window', center: 'away', catbed: 'catbed', dresser: 'dresser', rug: 'rug' };
+let camSnap = true;
+const ANCHOR_CAM = { tv: 'tv', sofa: 'sofa', bed: 'phone', sleep: 'sleep', desk: 'gaming', window: 'window', center: 'away', catbed: 'catroom', catroom: 'catroom', dresser: 'dresser', rug: 'rug', gaming: 'gaming' };
 
 /* ============================ 灯光 ============================ */
 scene.add(new THREE.HemisphereLight(0xdff0ff, 0x9fb4c6, 1.05));
@@ -1088,7 +1256,7 @@ function applyMode(m) {
   if (anchor && bh.anchor !== anchor) {
     goTo(anchor);                       // 先走过去，到位后自动坐下/躺下
     camAuto = true;
-    if (CAM[anchor]) { camGoal = CAM[anchor]; camBlend = 0; }
+    if (CAM[anchor]) { camGoal = CAM[anchor]; camBlend = 0; camSnap = true; }
     return;
   }
   const p = MODE_POSE[m] || 'stand';
@@ -1121,8 +1289,12 @@ function tick(now) {
   if (bh.state === 'walk') { walkStep(_dt); }
   else { applyPose(poseTarget, 0.05); }
 
-  if (!camAuto && performance.now() - camHoldAt > 20000) camAuto = true;
-  if (camAuto) {
+  if (!TOPVIEW && !camAuto && performance.now() - camHoldAt > 20000) camAuto = true;
+  if (camSnap && camAuto) {
+    camera.position.set(camGoal.pos[0], camGoal.pos[1], camGoal.pos[2]);
+    controls.target.set(camGoal.target[0], camGoal.target[1], camGoal.target[2]);
+    camBlend = 1; camSnap = false;
+  } else if (camAuto && !TOPVIEW) {
     camBlend = Math.min(1, camBlend + 0.015);
     const e = camBlend * camBlend * (3 - 2 * camBlend);
     camera.position.lerp(new THREE.Vector3(camGoal.pos[0], camGoal.pos[1], camGoal.pos[2]), 0.02 * e);
