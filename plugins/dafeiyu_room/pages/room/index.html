@@ -229,12 +229,14 @@ const put = (obj, x, y, z) => { obj.position.set(x, y, z); return obj; };
 
 /* ============================ 房间 ============================ */
 const room = new THREE.Group();
+const shell = new THREE.Group();   // 代码生成的墙地，加载 room.glb 后整个隐藏
+room.add(shell);
 scene.add(room);
 
 const floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 5.6), M.marble);
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
-room.add(floor);
+shell.add(floor);
 
 const rug = new THREE.Mesh(new THREE.CircleGeometry(1.3, 64), S(clothTex, 0xe9f3fa, 1));
 rug.rotation.x = -Math.PI / 2;
@@ -242,15 +244,15 @@ rug.position.set(-1.35, 0.012, 1.95);
 rug.receiveShadow = true;
 room.add(rug);
 
-room.add(put(softBox(14, 3.0, 0.16, M.wall, .02), 0, 1.5, -2.6));
-room.add(put(softBox(0.16, 3.0, 5.6, M.wall, .02), -7.0, 1.5, 0.2));
-room.add(put(softBox(0.16, 3.0, 5.6, M.wall, .02), 7.0, 1.5, 0.2));
+shell.add(put(softBox(14, 3.0, 0.16, M.wall, .02), 0, 1.5, -2.6));
+shell.add(put(softBox(0.16, 3.0, 5.6, M.wall, .02), -7.0, 1.5, 0.2));
+shell.add(put(softBox(0.16, 3.0, 5.6, M.wall, .02), 7.0, 1.5, 0.2));
 
-room.add(put(softBox(14, 3.0, 0.16, M.wall, .02), 0, 1.5, 3.0));
+shell.add(put(softBox(14, 3.0, 0.16, M.wall, .02), 0, 1.5, 3.0));
 const ceil = new THREE.Mesh(new THREE.PlaneGeometry(14, 5.6), S(wallTex, 0xbfb4a6, .98));
 ceil.rotation.x = Math.PI / 2;
 ceil.position.y = 3.0;
-room.add(ceil);
+shell.add(ceil);
 
 /* 窗 + 百叶 */
 const cityTex = canvasTex(512, 512, (g, w, h) => {
@@ -699,6 +701,50 @@ function pickAction(names, prefer) {
   return names[0];
 }
 
+
+/* ============================ 模型驱动 ============================ */
+let modelRoot = null;
+let modelActions = {};
+let modelCurrent = null;
+
+function onModelReady(root, gltf) {
+  modelRoot = root;
+  girl.visible = false;                    // 隐藏程序化小人
+  if (typeof contact !== 'undefined' && contact) contact.visible = false;
+  modelActions = {};
+  (gltf.animations || []).forEach(clip => { modelActions[clip.name] = clip; });
+  modelCurrent = null;
+  console.log('[room] 模型动作:', Object.keys(modelActions).join(', '));
+}
+
+function playModel(name, timeout) {
+  if (!modelRoot || !modelActions[name]) return;
+  if (modelCurrent === name) return;
+  modelCurrent = name;
+  const clip = modelActions[name];
+  if (mixer) mixer.stopAllAction();
+  const act = mixer.clipAction(clip);
+  act.reset();
+  act.setLoop(name === 'walk' || name === 'idle' ? THREE.LoopRepeat : THREE.LoopOnce, Infinity);
+  if (name !== 'walk' && name !== 'idle') act.clampWhenFinished = true;
+  act.play();
+}
+
+function placeModel(x, y, z, rotY) {
+  if (!modelRoot) return;
+  modelRoot.position.set(x, y, z);
+  modelRoot.rotation.y = rotY || 0;
+}
+
+const POSE_ACTION = {
+  lie: 'lie', sleep: 'sleep', sit: 'sit', sitSofa: 'sit',
+  pet: 'pet', yoga: 'sit', dresser: 'idle', window: 'idle', stand: 'idle'
+};
+const POSE_Y = {
+  lie: 0.62, sleep: 0.62, sitSofa: 0.55, sit: 0.02, pet: 0.02,
+  yoga: 0.02, dresser: 0.02, window: 0.02, stand: 0.02
+};
+
 function loadCharacter() {
   return new Promise(resolve => {
     const loader = new GLTFLoader();
@@ -725,6 +771,7 @@ function loadCharacter() {
         if (actions.__idle) actions.__idle.play();
       }
       console.log('[room] 外部模型已加载，动画', gltf.animations ? gltf.animations.length : 0, '个');
+      if (typeof onModelReady === 'function') onModelReady(root, gltf);
       resolve(true);
     }, undefined, err => {
       console.log('[room] 没有外部模型，用内置卡通形象', err && err.message);
@@ -822,7 +869,7 @@ const nstand = (x, z) => {
   return g;
 };
 nstand(-5.05, 1.05);
-nstand(-5.05, 3.02);
+nstand(-5.05, 2.92);
 const bedRug = new THREE.Mesh(new THREE.CircleGeometry(1.05, 36),
   new THREE.MeshStandardMaterial({ color: 0xd7cbbd, roughness: .96 }));
 bedRug.rotation.x = -Math.PI / 2;
@@ -949,7 +996,7 @@ catBed.add(put(softBox(0.10, 0.20, 0.56, S(clothTex, 0xd9c6b0, .95), .08), -0.38
 catBed.add(put(softBox(0.10, 0.20, 0.56, S(clothTex, 0xd9c6b0, .95), .08), 0.38, 0.14, 0));
 
 const dresser = new THREE.Group();
-dresser.position.set(-7.9, 0, 0.35);
+dresser.position.set(-6.55, 0, 0.45);
 dresser.rotation.y = -Math.PI / 2;
 room.add(dresser);
 dresser.add(put(softBox(1.1, 0.72, 0.46, M.wood, .03), 0, 0.36, 0));
@@ -973,22 +1020,22 @@ function partition(x1, z1, x2, z2, doorAt, doorWidth, doorAxis) {
     const a = Math.min(x1, x2), b = Math.max(x1, x2);
     if (doorAxis === 'x' && doorAt > a && doorAt < b) {
       const half = doorWidth / 2;
-      room.add(put(softBox(doorAt - half - a, wallH, 0.12, M.wall, .02), (a + doorAt - half) / 2, wallH / 2, z1));
-      room.add(put(softBox(b - doorAt - half, wallH, 0.12, M.wall, .02), (b + doorAt + half) / 2, wallH / 2, z1));
-      room.add(put(softBox(doorWidth, 0.5, 0.12, M.wall, .02), doorAt, wallH - 0.25, z1));
+      shell.add(put(softBox(doorAt - half - a, wallH, 0.12, M.wall, .02), (a + doorAt - half) / 2, wallH / 2, z1));
+      shell.add(put(softBox(b - doorAt - half, wallH, 0.12, M.wall, .02), (b + doorAt + half) / 2, wallH / 2, z1));
+      shell.add(put(softBox(doorWidth, 0.5, 0.12, M.wall, .02), doorAt, wallH - 0.25, z1));
     } else {
-      room.add(put(softBox(b - a, wallH, 0.12, M.wall, .02), (a + b) / 2, wallH / 2, z1));
+      shell.add(put(softBox(b - a, wallH, 0.12, M.wall, .02), (a + b) / 2, wallH / 2, z1));
     }
   } else {
     // 沿 z 的墙
     const a = Math.min(z1, z2), b = Math.max(z1, z2);
     if (doorAxis === 'z' && doorAt > a && doorAt < b) {
       const half = doorWidth / 2;
-      room.add(put(softBox(0.12, wallH, doorAt - half - a, M.wall, .02), x1, wallH / 2, (a + doorAt - half) / 2));
-      room.add(put(softBox(0.12, wallH, b - doorAt - half, M.wall, .02), x1, wallH / 2, (b + doorAt + half) / 2));
-      room.add(put(softBox(0.12, 0.5, doorWidth, M.wall, .02), x1, wallH - 0.25, doorAt));
+      shell.add(put(softBox(0.12, wallH, doorAt - half - a, M.wall, .02), x1, wallH / 2, (a + doorAt - half) / 2));
+      shell.add(put(softBox(0.12, wallH, b - doorAt - half, M.wall, .02), x1, wallH / 2, (b + doorAt + half) / 2));
+      shell.add(put(softBox(0.12, 0.5, doorWidth, M.wall, .02), x1, wallH - 0.25, doorAt));
     } else {
-      room.add(put(softBox(0.12, wallH, b - a, M.wall, .02), x1, wallH / 2, (a + b) / 2));
+      shell.add(put(softBox(0.12, wallH, b - a, M.wall, .02), x1, wallH / 2, (a + b) / 2));
     }
   }
 }
@@ -1030,6 +1077,28 @@ function setTv(on) {
   tvGlow.intensity = tvOn ? 1.35 : 0.0;
 }
 
+
+
+/* ============================ Blender 房型 ============================ */
+// 有 model/room.glb 就用它，隐藏代码生成的墙地
+function loadRoomShell() {
+  return new Promise(resolve => {
+    const loader = new GLTFLoader();
+    loader.load('./model/room.glb', gltf => {
+      const g = gltf.scene;
+      g.traverse(o => {
+        if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }
+      });
+      scene.add(g);
+      shell.visible = false;
+      console.log('[room] 已加载 Blender 房型 room.glb');
+      resolve(true);
+    }, undefined, err => {
+      console.log('[room] 没有 room.glb，用代码生成的墙地', err && err.message);
+      resolve(false);
+    });
+  });
+}
 
 /* ============================ 三只猫 ============================ */
 function buildCat(bodyColor, tailColor, scale) {
@@ -1118,7 +1187,7 @@ const POSE = {
     armL: -0.12, armR: -0.55, armLZ: 0.14, armRZ: -0.14, fore: -0.45, head: 0.12, phone: 2.2 },
   sleep: { root: [-5.55, 0.66, 2.05], rotX: -Math.PI / 2, rotY: -Math.PI / 2, hips: 0.05, thigh: -0.14, shin: 0.24, torso: 0.03,
     armL: -0.12, armR: -0.12, armLZ: 0.14, armRZ: -0.14, fore: -0.3, head: 0.12, phone: 0 },
-  window: { root: [-7.6, 0.44, 2.15], rotX: 0, rotY: 1.4, hips: 0, thigh: 0, shin: 0, torso: 0.05,
+  window: { root: [-6.40, 0.44, 1.90], rotX: 0, rotY: 1.4, hips: 0, thigh: 0, shin: 0, torso: 0.05,
     armL: -0.5, armR: -0.5, armLZ: 0.16, armRZ: -0.16, fore: -1.0, head: -0.16, phone: 0 }
 };
 const MODE_POSE = { sleep: 'sleep', phone: 'lie', desk: 'sit', window: 'window', away: 'stand' };
@@ -1168,14 +1237,14 @@ const ANCHOR = {
   bed:   { pos: [-5.55, 0.66, 2.05], rotY: -Math.PI / 2, pose: 'lie', label: '躺床上刷手机' },
   catbed:{ pos: [-2.45, 0.30, -1.35], rotY: 0.2, pose: 'pet',  label: '在猫房撸猫' },
   catroom:{ pos: [0.2, 0.30, -1.15], rotY: 1.2, pose: 'pet', label: '在猫房陪猫' },
-  dresser:{ pos: [-7.5, 0.44, 0.35], rotY: -1.57, pose: 'dresser', label: '在梳妆台前' },
+  dresser:{ pos: [-6.15, 0.44, 0.45], rotY: -1.57, pose: 'dresser', label: '在梳妆台前' },
   rug:   { pos: [-1.35, 0.26, 1.95], rotY: 1.9, pose: 'yoga', label: '在地毯上拉伸' },
   sleep: { pos: [-5.55, 0.66, 2.05], rotY: -Math.PI / 2, pose: 'sleep', label: '睡着了' },
   sofa:  { pos: [-2.15, 0.56, 2.05], rotY: 0.34, pose: 'sitSofa', label: '窝在沙发上' },
   tv:    { pos: [-2.15, 0.56, 2.05], rotY: 0.34, pose: 'sitSofa', label: '窝在沙发看电视' },
   desk:  { pos: [4.45, 0.52, 1.4], rotY: Math.PI, pose: 'sit', label: '在电竞房打游戏' },
   gaming:{ pos: [4.45, 0.52, 1.4], rotY: Math.PI, pose: 'sit', label: '在电竞房打游戏' },
-  window:{ pos: [-7.6, 0.44, 2.15], rotY: 1.4, pose: 'window', label: '主卧窗边发呆' },
+  window:{ pos: [-6.40, 0.44, 1.90], rotY: 1.4, pose: 'window', label: '主卧窗边发呆' },
   center:{ pos: [-0.9, 0.44, 0.4], rotY: 0.2, pose: 'stand', label: '站在房间中间' }
 };
 
@@ -1185,7 +1254,7 @@ POSE.pet = { root: [-2.45, 0.30, -1.35], rotX: 0, rotY: 0.2, hips: 0.12,
   thigh: -1.05, shin: 1.75, torso: 0.30, armL: -0.55, armR: -0.55,
   armLZ: 0.22, armRZ: -0.22, fore: -0.55, head: 0.34, phone: 0 };
 // 梳妆台前
-POSE.dresser = { root: [-7.5, 0.44, 0.35], rotX: 0, rotY: -1.57, hips: 0.02,
+POSE.dresser = { root: [-6.15, 0.44, 0.45], rotX: 0, rotY: -1.57, hips: 0.02,
   thigh: 0, shin: 0, torso: -0.03, armL: -0.85, armR: -0.85,
   armLZ: 0.16, armRZ: -0.16, fore: -1.05, head: 0.10, phone: 0 };
 // 地毯上拉伸
@@ -1209,38 +1278,37 @@ const bh = {
 
 
 function clampToRoom(px, pz, ax, az) {
-  // 按锚点所在房间给出可用范围，保证相机不被塞进墙里
-  const M = 0.28;
-  let x1 = -7.0, x2 = 7.0, z1 = -2.6, z2 = 3.0;
-  if (ax < -3.6) {            // 主卧
-    x1 = -7.0; x2 = -3.6; z1 = -2.6; z2 = 3.0;
-  } else if (ax > 3.4) {      // 电竞房
-    x1 = 3.4; x2 = 7.0; z1 = -2.6; z2 = 3.0;
-  } else if (az < 0.5) {      // 猫房
-    x1 = -3.6; x2 = 3.4; z1 = -2.6; z2 = 0.0;
-  } else {                    // 客厅
-    x1 = -3.6; x2 = 3.4; z1 = 0.0; z2 = 3.0;
-  }
-  return [Math.min(x2 - M, Math.max(x1 + M, px)),
-          Math.min(z2 - M, Math.max(z1 + M, pz))];
+  // 各房间的可站内框（离墙 0.75 m）
+  let box;
+  if (ax < -3.6)        box = [-6.25, -4.05, -1.85, 2.25];   // 主卧
+  else if (ax > 3.4)    box = [4.15, 6.25, -1.85, 2.25];     // 电竞房
+  else if (az < 0.0)    box = [-2.85, 2.65, -1.85, -0.75];   // 猫房
+  else                  box = [-2.85, 2.65, 0.75, 2.25];     // 客厅
+  return [Math.min(box[1], Math.max(box[0], px)),
+          Math.min(box[3], Math.max(box[2], pz))];
 }
 
 function autoCam(anchorName) {
   const a = ANCHOR[anchorName];
   if (!a) return null;
-  const dist = a.camDist || 2.6;
+  const dist = a.camDist || 2.9;
   const ry = a.rotY || 0;
   const bx = Math.sin(ry), bz = Math.cos(ry);
-  const raw = [a.pos[0] - bx * dist * 0.85 + bz * 0.9,
-               a.pos[2] - bz * dist * 0.85 - bx * 0.9];
+  const raw = [a.pos[0] + bx * dist + bz * 0.85,
+               a.pos[2] + bz * dist - bx * 0.85];
   const cl = clampToRoom(raw[0], raw[1], a.pos[0], a.pos[2]);
   return {
-    pos: [cl[0], a.pos[1] + (a.camH || 1.15), cl[1]],
+    pos: [cl[0], a.pos[1] + (a.camH || 1.30), cl[1]],
     target: [a.pos[0], a.pos[1] + 0.28, a.pos[2]]
   };
 }
 
 function setGirlVisible(v) {
+  if (modelRoot) {                       // 有外部模型时，程序化小人永远不显示
+    girl.visible = false;
+    if (contact) contact.visible = false;
+    return;
+  }
   girl.visible = v;
   if (contact) contact.visible = v;
 }
@@ -1249,6 +1317,10 @@ window.__dbg = () => ({ state: bh.state, anchor: bh.anchor,
   pos: girl.position.toArray().map(v => +v.toFixed(2)),
   rotX: +cur.rotX.toFixed(2), rotY: +girl.rotation.y.toFixed(2),
   visible: girl.visible });
+
+window.__cam = () => ({ cam: camera.position.toArray().map(v => +v.toFixed(2)),
+  goal: camGoal ? camGoal.pos.map(v => +v.toFixed(2)) : null,
+  anchor: bh.anchor, auto: camAuto, free: freeCam });
 
 function applyAnchor(name, instant) {
   if (name === 'away') {
@@ -1272,9 +1344,15 @@ function applyAnchor(name, instant) {
   bh.anchor = name;
   const camName = ANCHOR_CAM[name];
   camAuto = true;
-  if (camName && CAM[camName]) { camGoal = CAM[camName]; camBlend = 0; camSnap = true; }
-  if (ANCHOR_CAM[name] && CAM[ANCHOR_CAM[name]]) { camGoal = CAM[ANCHOR_CAM[name]]; camBlend = 0; }
+  const ac = autoCam(name);
+  if (ac) { camGoal = ac; camBlend = 0; camSnap = true; }
+  else if (camName && CAM[camName]) { camGoal = CAM[camName]; camBlend = 0; camSnap = true; }
   setTv(name === 'tv');
+  if (modelRoot) {
+    const act = POSE_ACTION[a.pose] || 'idle';
+    placeModel(a.pos[0], (POSE_Y[a.pose] !== undefined ? POSE_Y[a.pose] : 0.02), a.pos[2], a.rotY);
+    playModel(act);
+  }
   if (instant) { applyPose(p, 1); }
 }
 
@@ -1329,18 +1407,18 @@ function walkStep(dt) {
 
 /* ============================ 相机 ============================ */
 const CAM = {
-  sleep: { pos: [-4.05, 1.45, 3.25], target: [-5.75, 0.80, 2.05] },
-  phone: { pos: [-4.05, 1.45, 3.25], target: [-5.75, 0.80, 2.05] },
-  desk: { pos: [3.8, 1.60, -0.30], target: [4.95, 0.92, 2.05] },
-  window: { pos: [-4.35, 1.50, 2.30], target: [-7.75, 0.95, 2.15] },
-  away: { pos: [0.6, 3.6, 6.2], target: [-0.4, 0.6, 0.4] },
-  tv: { pos: [0.8, 1.50, 1.15], target: [-2.15, 0.95, 2.75] },
-  sofa: { pos: [0.8, 1.50, 1.15], target: [-2.15, 0.95, 2.75] },
-  catbed: { pos: [1.55, 1.35, -2.55], target: [-2.45, 0.55, -1.45] },
-  dresser: { pos: [-6.05, 1.40, 1.05], target: [-7.60, 0.95, 0.35] },
-  rug: { pos: [0.75, 1.60, 3.15], target: [-1.40, 0.40, 1.95] },
-  gaming: { pos: [3.8, 1.60, -0.30], target: [4.95, 0.92, 2.05] },
-  catroom: { pos: [1.55, 1.35, -2.55], target: [-2.45, 0.55, -1.45] }
+  sleep: { pos: [-4.35, 1.50, 2.15], target: [-5.60, 0.85, 2.05] },
+  phone: { pos: [-4.35, 1.50, 2.15], target: [-5.60, 0.85, 2.05] },
+  tv: { pos: [0.55, 1.50, 0.95], target: [-2.10, 0.95, 2.60] },
+  sofa: { pos: [0.55, 1.50, 0.95], target: [-2.10, 0.95, 2.60] },
+  desk: { pos: [4.05, 1.55, -0.25], target: [5.05, 0.95, 2.05] },
+  gaming: { pos: [4.05, 1.55, -0.25], target: [5.05, 0.95, 2.05] },
+  window: { pos: [-5.05, 1.50, 2.35], target: [-6.60, 0.95, 1.90] },
+  away: { pos: [0.3, 12.5, 5.6], target: [0.0, 0.2, 0.4] },
+  catbed: { pos: [1.15, 1.40, -0.55], target: [-2.45, 0.55, -1.45] },
+  catroom: { pos: [1.15, 1.40, -0.55], target: [-2.45, 0.55, -1.45] },
+  dresser: { pos: [-5.10, 1.45, 1.30], target: [-6.40, 0.95, 0.45] },
+  rug: { pos: [0.85, 1.60, 2.55], target: [-1.40, 0.40, 1.95] }
 };
 let freeCam = false;
 
@@ -1424,7 +1502,9 @@ function applyMode(m) {
   if (anchor && bh.anchor !== anchor) {
     goTo(anchor);                       // 先走过去，到位后自动坐下/躺下
     camAuto = true;
-    if (CAM[anchor]) { camGoal = CAM[anchor]; camBlend = 0; camSnap = true; }
+    const ac2 = autoCam(anchor);
+    if (ac2) { camGoal = ac2; camBlend = 0; camSnap = true; }
+    else if (CAM[anchor]) { camGoal = CAM[anchor]; camBlend = 0; camSnap = true; }
     return;
   }
   const p = MODE_POSE[m] || 'stand';
@@ -1454,10 +1534,18 @@ const t0 = performance.now();
 function tick(now) {
   const _dt = Math.min(0.1, (now - (tick._prev || now)) / 1000);
   tick._prev = now;
-  if (bh.state === 'walk') { walkStep(_dt); }
+  if (bh.state === 'walk') {
+    walkStep(_dt);
+    if (modelRoot && bh.target) {
+      playModel('walk');
+      placeModel(girl.position.x, 0.02, girl.position.z, girl.rotation.y);
+    }
+  }
   else { applyPose(poseTarget, 0.05); }
 
   if (!TOPVIEW && !camAuto && performance.now() - camHoldAt > 20000) camAuto = true;
+  camGoal.pos[0] = Math.max(-6.7, Math.min(6.7, camGoal.pos[0]));
+  camGoal.pos[2] = Math.max(-2.35, Math.min(2.8, camGoal.pos[2]));
   if (freeCam) {
     /* 自由视角：不干预相机 */
   } else if (camSnap && camAuto) {
@@ -1479,7 +1567,7 @@ function tick(now) {
   }
   const t = (now - t0) / 1000;
   if (cur.rotX > -0.5) torso.rotation.z = Math.sin(t * 1.2) * 0.012;
-  girl.position.y = cur.root.y + Math.sin(t * 1.35) * 0.006;
+  if (!modelRoot) girl.position.y = cur.root.y + Math.sin(t * 1.35) * 0.006;
   shade.material.emissiveIntensity = 1.05 + Math.sin(t * 2.2) * 0.05;
   screenLight.intensity = 1.5 + Math.sin(t * 5.1) * 0.12;
 
