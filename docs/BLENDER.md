@@ -112,3 +112,31 @@ VRM 模型多数不允许二次分发。`.vrm` 已加入 `.gitignore`，不随�
 2. 版权牌按包围盒位置判断隐藏（在头顶上方、且不是蒙皮网格）
 3. 朝向再校一次（现在背对镜头）
 4. 按房间给每个锚点单独调机位
+
+
+## VRM → 网页可用 glb（转换流程）
+
+模型直接用 `.vrm` 在网页里会出问题（自定义着色器、烘焙脸、自带说明牌）。
+正确做法是先在 Blender 里转换，再导出普通 glb：
+
+```bash
+# 1. 装 VRM 扩展（一次性）
+blender --command extension install-file -r user_default -e VRM_Addon_for_Blender-4_10_3.zip
+
+# 2. 转换
+blender --background --python tools/blender/convert_vrm_to_glb.py   -- --vrm model/character.vrm --out model/character.glb
+```
+
+`convert_vrm_to_glb.py` 做的事：
+
+1. 用 VRM 扩展导入
+2. 删除头顶上方的版权说明板
+3. 材质 MToon → Principled BSDF（保留颜色贴图、透明度）
+4. 落地到 z=0
+5. 导出 glb（不带相机灯光）
+
+### 还没解决的
+
+- 部分配件材质（帽子/尾巴）仍偏金属——转换要覆盖所有 slot，含未使用的材质
+- glb 没有动画剪辑，网页需要按骨骼名驱动姿势（当前只对 VRM 生效）
+- 镜头距离按模型尺寸再校准
