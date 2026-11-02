@@ -739,7 +739,7 @@ function placeModel(x, y, z, rotY) {
   if (vrmModel) {
     vrmModel.position.x = x;
     vrmModel.position.z = z;
-    vrmModel.rotation.y = (rotY || 0) + Math.PI;   // VRM 基准朝 -Z
+    vrmModel.rotation.y = (rotY || 0) + Math.PI;   // 该模型导出朝向与锚点相反
     return;
   }
   if (!modelRoot) return;
@@ -765,12 +765,33 @@ const USE_CHARACTER_GLB = true;
 let vrmModel = null;
 let vrmHumanoid = null;
 let vrmBones = {};
+let vrmGroundY = 0;
 
 function normBone(name) {
   try {
     return vrmHumanoid ? vrmHumanoid.getNormalizedBoneNode(name) : null;
   } catch (e) { return null; }
 }
+
+window.__vrm = () => {
+  if (!vrmModel) return null;
+  const b = new THREE.Box3().setFromObject(vrmModel);
+  return { pos: vrmModel.position.toArray().map(v => +v.toFixed(2)),
+           scale: +vrmModel.scale.x.toFixed(3),
+           size: [b.max.x - b.min.x, b.max.y - b.min.y, b.max.z - b.min.z].map(v => +v.toFixed(2)),
+           minY: +b.min.y.toFixed(2), anchor: bh.anchor };
+};
+
+window.__vrmMeshes = () => {
+  const out = [];
+  if (!vrmModel) return out;
+  vrmModel.traverse(o => {
+    if (o.isMesh) out.push({ name: o.name, skinned: !!o.isSkinnedMesh,
+      mat: (o.material && (o.material.type || o.material.name)) || "none",
+      visible: o.visible });
+  });
+  return out;
+};
 
 function loadVRM() {
   return new Promise(resolve => {
@@ -789,9 +810,18 @@ function loadVRM() {
       const h = Math.max(0.01, box.max.y - box.min.y);
       root.scale.setScalar(1.55 / h);
       const box2 = new THREE.Box3().setFromObject(root);
-      root.position.y = -box2.min.y;
+      vrmGroundY = -box2.min.y;
+      root.position.y = vrmGroundY;
       root.rotation.y = Math.PI;            // VRM 默认朝 -Z，转成朝 +Z
       scene.add(root);
+      // 只隐藏非蒙皮的“版权牌/说明板”，别误伤身体网格
+      root.traverse(o => {
+        if (o.isMesh && !o.isSkinnedMesh &&
+            /credit|licen[cs]e|readme|plate|sign|board|notice/i.test(o.name || '')) {
+          o.visible = false;
+          console.log('[room] 隐藏说明牌:', o.name);
+        }
+      });
       vrmModel = root;
       vrmHumanoid = vrm.humanoid;
       vrmBones = {};
@@ -1609,7 +1639,14 @@ function driveVRM(t) {
    'leftUpperArm', 'leftLowerArm', 'rightUpperArm', 'rightLowerArm',
    'leftUpperLeg', 'leftLowerLeg', 'rightUpperLeg', 'rightLowerLeg'].forEach(n => setBone(n, 0, 0, 0));
   vrmModel.rotation.x = 0;
-  vrmModel.position.y = 0;
+  vrmModel.position.y = vrmGroundY;
+  // 每帧按锚点兜底定位（避免摆位调用被漏掉）
+  const an = (typeof ANCHOR !== 'undefined' && bh.anchor) ? ANCHOR[bh.anchor] : null;
+  if (an && bh.state !== 'walk') {
+    vrmModel.position.x = an.pos[0];
+    vrmModel.position.z = an.pos[2];
+    vrmModel.rotation.y = (an.rotY || 0) + Math.PI;
+  }
 
   // 基线：双臂自然下垂（VRM 是 T-pose 绑定）
   setBone('leftUpperArm', 0, 0, -1.15);
@@ -1627,7 +1664,7 @@ function driveVRM(t) {
     setBone('rightUpperArm', 0.45 * sw, 0, 1.1);
     setBone('spine', 0.03, 0, 0);
   } else if (st === 'sit') {
-    vrmModel.position.y = -0.02;
+    vrmModel.position.y = vrmGroundY - 0.28;
     setBone('leftUpperLeg', -1.45, 0, 0.04);
     setBone('rightUpperLeg', -1.45, 0, -0.04);
     setBone('leftLowerLeg', 1.35, 0, 0);
@@ -1639,7 +1676,7 @@ function driveVRM(t) {
     setBone('spine', -0.04, 0, 0);
   } else if (st === 'lie' || st === 'sleep') {
     vrmModel.rotation.x = -Math.PI / 2;
-    vrmModel.position.y = 0.42;
+    vrmModel.position.y = vrmGroundY + 0.42;
     setBone('leftUpperArm', 0.1, 0, -0.55);
     setBone('rightUpperArm', 0.1, 0, 0.55);
     setBone('head', st === 'sleep' ? 0.1 : 0.22, 0, 0);

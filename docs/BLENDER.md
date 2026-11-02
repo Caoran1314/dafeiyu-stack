@@ -95,3 +95,20 @@ BL="$LOCALAPPDATA/Programs/Blender Foundation/Blender 4.5/blender.exe"
 
 VRM 模型多数不允许二次分发。`.vrm` 已加入 `.gitignore`，不随仓库和插件包分发；
 每个部署者需要自己准备模型。示例：BOOTH 上的「Big Fat Blue Fish」（CC BY-NC-SA 4.0，仅非商用）。
+
+
+## 已知问题：自定义着色器材质
+
+「Big Fat Blue Fish」是从 Warudo 转出来的 VRM，材质是**自定义 ShaderMaterial（liltoon 烘焙）**，
+不是标准 MToon。three.js 加载后会出现：
+
+- 头部像银色金属碗（头饰材质不对）
+- 头发/身体偏平
+- 模型自带一块版权说明牌
+
+**下一步做法**（待办）：
+
+1. 遍历所有 mesh，把材质重建为 `MeshToonMaterial`，贴图沿用原来的 `map`
+2. 版权牌按包围盒位置判断隐藏（在头顶上方、且不是蒙皮网格）
+3. 朝向再校一次（现在背对镜头）
+4. 按房间给每个锚点单独调机位
