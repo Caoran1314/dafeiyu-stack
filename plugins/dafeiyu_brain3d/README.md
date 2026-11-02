@@ -27,3 +27,18 @@
 ## 注意
 
 直链 token 7 天过期，建议从「面板 → 插件」进入。
+
+## 常见问题
+
+**页面只有光环和光束，没有大脑**
+
+说明半球模型文件没装上。完整的 `pages/panel/cortex/` 需要这几个文件：
+
+```
+lh.bin  rh.bin                       各约 5 MB
+lh.hologram.bin  rh.hologram.bin     各约 2.5 MB
+lh.fibers.bin    rh.fibers.bin       各约 220 KB
+```
+
+安装包约 7.7 MB。如果你拿到的包只有 2–3 MB，说明是被精简过的，
+要找完整版重装——页面没有模型文件时不会报错，只是画不出脑形。

@@ -138,9 +138,34 @@ class MindCore(Star):
 
     # ---------------------------------------------------------------- 导入
 
+
+    @staticmethod
+    def _norm_text(t: str) -> str:
+        """去重用的归一化：去掉标点、空白、大小写差异。"""
+        import re as _re
+        t = str(t or "").lower()
+        t = _re.sub(r"[\s\u3000]+", "", t)
+        t = _re.sub(r"[，。！？、；：,.!?;:\"'（）()《》<>【】\[\]…—\-~·]+", "", t)
+        return t[:120]
+
+    def _dup_of(self, norm: str, cache: dict) -> int | None:
+        """同文本已存在就返回它的 id（内存缓存 + 库里查一次）。"""
+        if not norm:
+            return None
+        if norm in cache:
+            return cache[norm]
+        row = self.db.execute(
+            "SELECT id FROM memories WHERE lower(replace(replace(text,' ',''),'，',''))=? LIMIT 1",
+            (norm,)).fetchone()
+        if row:
+            cache[norm] = int(row[0])
+            return int(row[0])
+        return None
+
     def _seed(self) -> tuple[int, int]:
-        added = skipped = 0
+        added = skipped = dup = 0
         cur = self.db.cursor()
+        seen: dict = {}
 
         # 旧库：episodes / facts
         db = _open_ro(OLD_DB)
@@ -173,6 +198,10 @@ class MindCore(Star):
                     tt = self._parse_time(r["tt"] if time_col else None)
                     imp = float(r["imp"] or 0.6) if imp_col else 0.6
                     ent = str(r["ent"] or "") if ent_col else ""
+                    norm = self._norm_text(txt)
+                    if self._dup_of(norm, seen) is not None:
+                        dup += 1
+                        continue
                     cur.execute(
                         "INSERT OR IGNORE INTO memories"
                         "(src,src_id,text,kind,entities,importance,weight,t_anchor,"
@@ -204,6 +233,10 @@ class MindCore(Star):
                         continue
                     tt = float(r["created_at"] or time.time())
                     imp = float(r["importance"] or 0.5)
+                    norm = self._norm_text(txt)
+                    if self._dup_of(norm, seen) is not None:
+                        dup += 1
+                        continue
                     cur.execute(
                         "INSERT OR IGNORE INTO memories"
                         "(src,src_id,text,kind,entities,importance,weight,t_anchor,"
@@ -218,7 +251,7 @@ class MindCore(Star):
             db.close()
 
         self.db.commit()
-        return added, skipped
+        return added, skipped + dup
 
     @staticmethod
     def _parse_time(v) -> float:
@@ -1000,6 +1033,57 @@ class MindCore(Star):
             f"当前阈值：中期 {self._c('promote_mid', 0.35)} / 长期 {self._c('promote_long', 0.60)}\n"
             f"建议：中期 {max(0.30, round(p50, 2))} / 长期 {max(0.55, round(p75, 2))}\n"
             f"分布：{counts}")
+
+
+    @filter.command("心智去重")
+    async def cmd_dedupe(self, event: AstrMessageEvent, action: str = ""):
+        """合并重复记忆。用法：/心智去重（预演）｜ /心智去重 确认（真的合并）"""
+        import asyncio
+
+        def run(apply: bool) -> dict:
+            rows = self.db.execute(
+                "SELECT id, text, weight, access_count, t_anchor, pool FROM memories "
+                "ORDER BY id").fetchall()
+            groups: dict = {}
+            for rid, text, w, acc, ts, pool in rows:
+                k = self._norm_text(text)
+                if not k:
+                    continue
+                groups.setdefault(k, []).append((rid, w, acc, ts, pool))
+            dup_groups = {k: v for k, v in groups.items() if len(v) > 1}
+            extra = sum(len(v) - 1 for v in dup_groups.values())
+            if apply and dup_groups:
+                with self._lock:
+                    for k, v in dup_groups.items():
+                        keep = max(v, key=lambda x: (x[1] or 0))
+                        w = max(float(x[1] or 0) for x in v)
+                        acc = sum(int(x[2] or 0) for x in v)
+                        self.db.execute(
+                            "UPDATE memories SET weight=?, access_count=? WHERE id=?",
+                            (min(1.0, w), acc, keep[0]))
+                        for x in v:
+                            if x[0] != keep[0]:
+                                self.db.execute("DELETE FROM memories WHERE id=?", (x[0],))
+                    self.db.commit()
+            return {"groups": len(dup_groups), "extra": extra,
+                    "kept": len(rows) - (extra if apply else 0), "applied": apply}
+
+        apply = str(action or "").strip() in ("确认", "apply", "yes")
+        try:
+            r = await asyncio.to_thread(run, apply)
+        except Exception as exc:  # noqa: BLE001
+            yield event.plain_result(f"去重失败：{exc!r}")
+            return
+        if r["groups"] == 0:
+            yield event.plain_result("没有重复记忆。")
+            return
+        if r["applied"]:
+            yield event.plain_result(
+                f"已合并 {r['groups']} 组、删掉 {r['extra']} 条重复\n现在共 {r['kept']} 条")
+        else:
+            yield event.plain_result(
+                f"发现 {r['groups']} 组重复，多出 {r['extra']} 条\n"
+                f"确认合并请发：/心智去重 确认")
 
     @filter.command("心智状态")
     async def cmd_all(self, event: AstrMessageEvent):

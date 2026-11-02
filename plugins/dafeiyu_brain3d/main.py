@@ -561,6 +561,45 @@ def build_timeline(pins_raw: str = "") -> dict:
     tl = apply_overrides(tl, _edits)
     return tl
 
+
+CORE_DB = "/AstrBot/data/plugin_data/dafeiyu_mindcore/memory_core.db"
+
+
+def load_core_stats(limit: int = 8) -> dict:
+    """读心智库：记忆池分布 + 权重最高的几条。只读。"""
+    if not os.path.exists(CORE_DB):
+        return {"available": False}
+    out = {"available": True, "total": 0, "pools": {}, "top": [], "avg_weight": 0.0}
+    try:
+        con = sqlite3.connect(f"file:{CORE_DB}?mode=ro", uri=True, timeout=10)
+        con.row_factory = sqlite3.Row
+        try:
+            out["total"] = int(con.execute("SELECT COUNT(*) FROM memories").fetchone()[0] or 0)
+            for r in con.execute("SELECT pool, COUNT(*) n, AVG(weight) w FROM memories GROUP BY pool"):
+                out["pools"][r["pool"] or "short"] = {"n": int(r["n"]), "w": round(float(r["w"] or 0), 3)}
+            rows = con.execute(
+                "SELECT text, pool, weight, access_count, t_anchor, created_at FROM memories "
+                "ORDER BY weight DESC LIMIT ?", (limit,)).fetchall()
+            now = time.time()
+            for r in rows:
+                ts = float(r["t_anchor"] or r["created_at"] or 0)
+                out["top"].append({
+                    "text": (r["text"] or "")[:80],
+                    "pool": r["pool"] or "short",
+                    "weight": round(float(r["weight"] or 0), 3),
+                    "access": int(r["access_count"] or 0),
+                    "age_days": int(max(0, (now - ts) / 86400)) if ts else None,
+                })
+            out["avg_weight"] = round(float(con.execute(
+                "SELECT AVG(weight) FROM memories").fetchone()[0] or 0), 3)
+        finally:
+            con.close()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"[brain3d] 读心智库失败：{exc!r}")
+        out["available"] = False
+    return out
+
+
 def build_graph(db_path: str) -> dict:
     """把 brain.db 转成 3D 大脑的图数据。"""
     if not os.path.exists(db_path):
@@ -653,6 +692,7 @@ def build_graph(db_path: str) -> dict:
             "kinds": _kinds,
             "recent7": _recent,
             "mood": load_mood(),
+            "core": load_core_stats(),
         },
     }
 

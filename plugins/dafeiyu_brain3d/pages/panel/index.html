@@ -27,6 +27,17 @@
     font: 11px/1.7 Consolas, monospace; color: #35566b;
     pointer-events: none;
   }
+
+  .core-total{color:#5f8ba3;font-size:11px;margin-bottom:6px}
+  .core-total b{color:#54e7ff}
+  .core-row{display:flex;align-items:center;gap:8px;font-size:11px;color:#6f97ad;margin:3px 0}
+  .core-row span{width:30px;flex:none}
+  .core-row i{flex:1;height:4px;background:#12222e;border-radius:2px;overflow:hidden}
+  .core-row em{display:block;height:100%;border-radius:2px}
+  .core-row b{width:34px;text-align:right;color:#cfe4ef;font-weight:500}
+  .core-item{display:flex;gap:8px;font-size:10.5px;color:#54798d;margin:3px 0;line-height:1.35}
+  .core-item b{color:#ffc66c;flex:none;font-weight:500}
+  .core-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 
 <!--
@@ -692,6 +703,9 @@ function _status(msg, isError) {
   </div>
   <div class="sec">节点类型</div>
   <div id="type-legend" class="legend2"></div>
+  <div class="sec" id="core-sec" style="display:none">心智库 · 记忆池</div>
+  <div id="core-pools"></div>
+  <div id="core-top"></div>
   <div class="sec" id="mood-sec" style="display:none">心情</div>
   <div id="mood-bars"></div>
   <div id="orphan-note" class="orphan"></div>
@@ -775,6 +789,26 @@ function _status(msg, isError) {
       return '<div><i style="background:'+TYPES[t][0]+'"></i><span>'+TYPES[t][1]+
              '</span><b>'+byType[t]+'</b></div>';
     }).join('');
+    var core=meta.core||{};
+    if(core.available&&core.total>0){
+      document.getElementById('core-sec').style.display='';
+      var pools=core.pools||{};
+      var order=['short','mid','long','archive','deep','trace'];
+      var names={short:'短期',mid:'中期',long:'长期',archive:'归档',deep:'深层',trace:'痕迹'};
+      var cols={short:'#54e7ff',mid:'#79f3c8',long:'#ffc66c',archive:'#bd96ff',deep:'#5a7f96',trace:'#3d5566'};
+      document.getElementById('core-pools').innerHTML=
+        '<div class="core-total">共 <b>'+core.total+'</b> 条 · 平均权重 <b>'+(core.avg_weight||0).toFixed(3)+'</b></div>'+
+        order.filter(function(k){return pools[k];}).map(function(k){
+          var v=pools[k], pct=Math.min(100,(v.w||0)*100);
+          return '<div class="core-row"><span>'+names[k]+'</span>'
+               + '<i><em style="width:'+pct.toFixed(0)+'%;background:'+cols[k]+'"></em></i>'
+               + '<b>'+v.n+'</b></div>';
+        }).join('');
+      document.getElementById('core-top').innerHTML=(core.top||[]).slice(0,5).map(function(t){
+        var w=(t.weight||0).toFixed(2);
+        return '<div class="core-item"><b>'+w+'</b><span>'+t.text+'</span></div>';
+      }).join('');
+    }
     var mood=meta.mood||{};
     if(mood.available){
       document.getElementById('mood-sec').style.display='';

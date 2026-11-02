@@ -531,6 +531,26 @@ docker compose restart napcat
 
 ---
 
+
+## 网络说明（很容易踩）
+
+容器**能访问国内服务**，但**境外站点常常超时**：
+
+| 目标 | 一般情况 | 用途 |
+|---|---|---|
+| DeepSeek / 智谱 / 通义 API | ✅ 正常 | 主模型 |
+| Ollama 模型拉取 | ✅ 正常 | `bge-m3`、`qwen2.5vl` |
+| Docker 镜像源（daocloud 等） | ✅ 正常 | astrbot / napcat |
+| AstrBot 插件市场 | ✅ 正常 | 装插件 |
+| **GitHub / jsDelivr / Wikimedia** | ❌ 经常握手超时 | 拉源码、下图片 |
+
+### 结论
+
+- **装插件优先用市场**，不要指望在容器里 `git clone`
+- **要装 GitHub 上的插件**：本机下 zip → 面板上传
+- **模型文件**（如 3D 脑的 15 MB 半球数据）必须**随安装包一起带**，不能设计成"装完再下载"
+- 让插件去下载境外图片/资源的功能，在容器里基本不可用
+
 ## 10. 排错表
 
 | 症状 | 原因 | 处理 |
@@ -546,6 +566,8 @@ docker compose restart napcat
 | 语音没声音 | SoVITS 没起 / 参考音频缺失 | `logs sovits`；检查 `data/refaudio` |
 | ASR 不识别 | 模型没下 | 下 `vosk-model-cn` 到 `data/asr/models` |
 | 插件列表里没有 `dafeiyu_*` | 复制路径不对 | `ls data/astrbot/plugins` 应该有 10 个目录 |
+| 日志里 `SSL: UNEXPECTED_EOF` / handshake timeout | 在访问境外站点（GitHub/jsDelivr） | 这些源改在本机下载后传入容器 |
+| 3D 脑页面只有光环、没有大脑 | `cortex/*.bin` 模型文件没装上（约 15 MB） | 从完整安装包重装，别用精简过的包 |
 | 主动消息发不出，日志 `cannot find platform` | 会话 ID 前缀写成了 `aiocqhttp` | 用平台实例 ID：`napcat:FriendMessage:<QQ>` |
 | 你发图她说不认识 | 视觉模型没配好或地址写成 `ollama` | 用 `172.17.0.1:11434/v1`，确认 provider 测试 available |
 | 她发了图却答不上图里是什么 | AstrBot 只给「收到的图」做描述，不给「自己发的图」做描述 | 插件主动发图时，自己先调视觉模型把描述写进配文 |
