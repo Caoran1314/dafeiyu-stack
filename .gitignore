@@ -10,3 +10,6 @@ persona/local/
 
 # 维护者自己用的发布脚本与内部清单，不公开
 _internal/
+
+# VRM 人物模型：授权不允许分发，用户自备
+plugins/dafeiyu_room/pages/room/model/*.vrm

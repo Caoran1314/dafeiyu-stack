@@ -78,3 +78,20 @@ BL="$LOCALAPPDATA/Programs/Blender Foundation/Blender 4.5/blender.exe"
 1. 在 Blender 里手工精修人物（发型、脸、裙子），保留同名骨骼和动作
 2. 用真实贴图代替纯色材质（`Principled BSDF` + 图片贴图）
 3. 房型导出时带上家具（现在是代码家具 + Blender 墙地混搭）
+
+
+## 人物：优先用 VRM
+
+页面会先尝试 `model/character.vrm`（VRM 模型），失败才退回 `character.glb`，再退回内置小人。
+
+| 项 | 说明 |
+|---|---|
+| 加载器 | `three/vrm/three-vrm.module.min.js`（已内置，不依赖外网） |
+| 缩放 | 自动缩放到 1.55 m 身高 |
+| 朝向 | VRM 默认朝 -Z，代码里已转成 +Z |
+| 动作 | 用归一化骨骼驱动（idle/walk/sit/lie/sleep/pet），不依赖模型自带动画 |
+
+### 授权提醒
+
+VRM 模型多数不允许二次分发。`.vrm` 已加入 `.gitignore`，不随仓库和插件包分发；
+每个部署者需要自己准备模型。示例：BOOTH 上的「Big Fat Blue Fish」（CC BY-NC-SA 4.0，仅非商用）。

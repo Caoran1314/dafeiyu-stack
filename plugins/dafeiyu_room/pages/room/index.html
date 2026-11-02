@@ -69,6 +69,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from './three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from './three/examples/jsm/loaders/GLTFLoader.js';
+import { VRMLoaderPlugin, VRMUtils } from './three/vrm/three-vrm.module.min.js';
 
 /* ============================ 渲染基础 ============================ */
 const canvas = document.getElementById('c');
@@ -735,6 +736,12 @@ function playModel(name, timeout) {
 }
 
 function placeModel(x, y, z, rotY) {
+  if (vrmModel) {
+    vrmModel.position.x = x;
+    vrmModel.position.z = z;
+    vrmModel.rotation.y = (rotY || 0) + Math.PI;   // VRM 基准朝 -Z
+    return;
+  }
   if (!modelRoot) return;
   modelRoot.position.set(x, y, z);
   modelRoot.rotation.y = rotY || 0;
@@ -751,7 +758,57 @@ const POSE_Y = {
 
 // 人物模型开关：true = 用 model/character.glb，false = 用内置程序化小人
 // 现在脚本生成的占位模型观感不佳，先关掉；换成正式模型后改 true
-const USE_CHARACTER_GLB = false;
+const USE_CHARACTER_GLB = true;
+
+
+// ---------------------------------------------------------------- VRM
+let vrmModel = null;
+let vrmHumanoid = null;
+let vrmBones = {};
+
+function normBone(name) {
+  try {
+    return vrmHumanoid ? vrmHumanoid.getNormalizedBoneNode(name) : null;
+  } catch (e) { return null; }
+}
+
+function loadVRM() {
+  return new Promise(resolve => {
+    const loader = new GLTFLoader();
+    loader.register(parser => new VRMLoaderPlugin(parser));
+    loader.load('./model/character.vrm', gltf => {
+      const vrm = gltf.userData.vrm;
+      if (!vrm) { resolve(false); return; }
+      try {
+        VRMUtils.removeUnnecessaryVertices(gltf.scene);
+        VRMUtils.combineSkeletons(gltf.scene);
+      } catch (e) { console.log('[room] VRM 优化跳过', e && e.message); }
+      const root = vrm.scene;
+      // 量身高并缩放到 1.55 m
+      const box = new THREE.Box3().setFromObject(root);
+      const h = Math.max(0.01, box.max.y - box.min.y);
+      root.scale.setScalar(1.55 / h);
+      const box2 = new THREE.Box3().setFromObject(root);
+      root.position.y = -box2.min.y;
+      root.rotation.y = Math.PI;            // VRM 默认朝 -Z，转成朝 +Z
+      scene.add(root);
+      vrmModel = root;
+      vrmHumanoid = vrm.humanoid;
+      vrmBones = {};
+      ['hips', 'spine', 'chest', 'neck', 'head',
+       'leftUpperArm', 'leftLowerArm', 'rightUpperArm', 'rightLowerArm',
+       'leftUpperLeg', 'leftLowerLeg', 'leftFoot', 'rightUpperLeg', 'rightLowerLeg', 'rightFoot']
+        .forEach(n => { vrmBones[n] = normBone(n); });
+      girl.visible = false;
+      if (contact) contact.visible = false;
+      console.log('[room] VRM 已加载，身高缩放到 1.55m');
+      resolve(true);
+    }, undefined, err => {
+      console.log('[room] VRM 加载失败，回退', err && err.message);
+      resolve(false);
+    });
+  });
+}
 
 function loadCharacter() {
   return new Promise(resolve => {
@@ -1313,7 +1370,7 @@ function autoCam(anchorName) {
 }
 
 function setGirlVisible(v) {
-  if (modelRoot) {                       // 有外部模型时，程序化小人永远不显示
+  if (modelRoot || vrmModel) {           // 有外部模型时，程序化小人永远不显示
     girl.visible = false;
     if (contact) contact.visible = false;
     return;
@@ -1353,11 +1410,11 @@ function applyAnchor(name, instant) {
   bh.anchor = name;
   const camName = ANCHOR_CAM[name];
   camAuto = true;
-  const ac = autoCam(name);
-  if (ac) { camGoal = ac; camBlend = 0; camSnap = true; }
-  else if (camName && CAM[camName]) { camGoal = CAM[camName]; camBlend = 0; camSnap = true; }
+  if (camName && CAM[camName]) { camGoal = CAM[camName]; camBlend = 0; camSnap = true; }
   setTv(name === 'tv');
-  if (modelRoot) {
+  if (vrmModel) {
+    placeModel(a.pos[0], 0, a.pos[2], a.rotY);
+  } else if (modelRoot) {
     const act = POSE_ACTION[a.pose] || 'idle';
     placeModel(a.pos[0], (POSE_Y[a.pose] !== undefined ? POSE_Y[a.pose] : 0.02), a.pos[2], a.rotY);
     playModel(act);
@@ -1416,17 +1473,17 @@ function walkStep(dt) {
 
 /* ============================ 相机 ============================ */
 const CAM = {
-  sleep: { pos: [-4.35, 1.50, 2.15], target: [-5.60, 0.85, 2.05] },
-  phone: { pos: [-4.35, 1.50, 2.15], target: [-5.60, 0.85, 2.05] },
+  sleep: { pos: [-4.30, 1.55, 2.55], target: [-5.80, 0.85, 2.05] },
+  phone: { pos: [-4.30, 1.55, 2.55], target: [-5.80, 0.85, 2.05] },
   tv: { pos: [0.55, 1.50, 0.95], target: [-2.10, 0.95, 2.60] },
   sofa: { pos: [0.55, 1.50, 0.95], target: [-2.10, 0.95, 2.60] },
   desk: { pos: [4.05, 1.55, -0.25], target: [5.05, 0.95, 2.05] },
   gaming: { pos: [4.05, 1.55, -0.25], target: [5.05, 0.95, 2.05] },
-  window: { pos: [-5.05, 1.50, 2.35], target: [-6.60, 0.95, 1.90] },
+  window: { pos: [-4.60, 1.50, 2.45], target: [-6.55, 0.95, 1.90] },
   away: { pos: [0.3, 12.5, 5.6], target: [0.0, 0.2, 0.4] },
   catbed: { pos: [1.15, 1.40, -0.55], target: [-2.45, 0.55, -1.45] },
   catroom: { pos: [1.15, 1.40, -0.55], target: [-2.45, 0.55, -1.45] },
-  dresser: { pos: [-5.10, 1.45, 1.30], target: [-6.40, 0.95, 0.45] },
+  dresser: { pos: [-4.55, 1.50, 2.20], target: [-6.30, 0.90, 0.50] },
   rug: { pos: [0.85, 1.60, 2.55], target: [-1.40, 0.40, 1.95] }
 };
 let freeCam = false;
@@ -1511,9 +1568,7 @@ function applyMode(m) {
   if (anchor && bh.anchor !== anchor) {
     goTo(anchor);                       // 先走过去，到位后自动坐下/躺下
     camAuto = true;
-    const ac2 = autoCam(anchor);
-    if (ac2) { camGoal = ac2; camBlend = 0; camSnap = true; }
-    else if (CAM[anchor]) { camGoal = CAM[anchor]; camBlend = 0; camSnap = true; }
+    if (CAM[anchor]) { camGoal = CAM[anchor]; camBlend = 0; camSnap = true; }
     return;
   }
   const p = MODE_POSE[m] || 'stand';
@@ -1538,6 +1593,76 @@ async function poll() {
 setInterval(poll, 2500);
 poll();
 
+
+/* ============================ VRM 程序化动作 ============================ */
+function setBone(name, x, y, z) {
+  const b = vrmBones[name];
+  if (!b) return;
+  b.rotation.set(x || 0, y || 0, z || 0);
+}
+
+function driveVRM(t) {
+  if (!vrmModel) return;
+  const st = (typeof bh !== 'undefined' && bh.state === 'walk') ? 'walk' : (bh.anchor === 'sleep' ? 'sleep' : (bh.anchor === 'tv' || bh.anchor === 'sofa' ? 'sit' : (bh.anchor === 'bed' ? 'lie' : (bh.anchor === 'catbed' || bh.anchor === 'catroom' ? 'pet' : (bh.anchor === 'rug' ? 'sit' : 'idle')))));
+  // 全清零
+  ['hips', 'spine', 'chest', 'neck', 'head',
+   'leftUpperArm', 'leftLowerArm', 'rightUpperArm', 'rightLowerArm',
+   'leftUpperLeg', 'leftLowerLeg', 'rightUpperLeg', 'rightLowerLeg'].forEach(n => setBone(n, 0, 0, 0));
+  vrmModel.rotation.x = 0;
+  vrmModel.position.y = 0;
+
+  // 基线：双臂自然下垂（VRM 是 T-pose 绑定）
+  setBone('leftUpperArm', 0, 0, -1.15);
+  setBone('rightUpperArm', 0, 0, 1.15);
+  setBone('leftLowerArm', 0, 0, -0.12);
+  setBone('rightLowerArm', 0, 0, 0.12);
+
+  if (st === 'walk') {
+    const sw = Math.sin(t * 7.5);
+    setBone('leftUpperLeg', 0.55 * sw, 0, 0);
+    setBone('rightUpperLeg', -0.55 * sw, 0, 0);
+    setBone('leftLowerLeg', Math.max(0, -sw) * 0.7, 0, 0);
+    setBone('rightLowerLeg', Math.max(0, sw) * 0.7, 0, 0);
+    setBone('leftUpperArm', -0.45 * sw, 0, -1.1);
+    setBone('rightUpperArm', 0.45 * sw, 0, 1.1);
+    setBone('spine', 0.03, 0, 0);
+  } else if (st === 'sit') {
+    vrmModel.position.y = -0.02;
+    setBone('leftUpperLeg', -1.45, 0, 0.04);
+    setBone('rightUpperLeg', -1.45, 0, -0.04);
+    setBone('leftLowerLeg', 1.35, 0, 0);
+    setBone('rightLowerLeg', 1.35, 0, 0);
+    setBone('leftUpperArm', -0.35, 0, -1.0);
+    setBone('rightUpperArm', -0.35, 0, 1.0);
+    setBone('leftLowerArm', -0.35, 0, 0);
+    setBone('rightLowerArm', -0.35, 0, 0);
+    setBone('spine', -0.04, 0, 0);
+  } else if (st === 'lie' || st === 'sleep') {
+    vrmModel.rotation.x = -Math.PI / 2;
+    vrmModel.position.y = 0.42;
+    setBone('leftUpperArm', 0.1, 0, -0.55);
+    setBone('rightUpperArm', 0.1, 0, 0.55);
+    setBone('head', st === 'sleep' ? 0.1 : 0.22, 0, 0);
+    setBone('leftUpperLeg', 0.05, 0, 0.03);
+    setBone('rightUpperLeg', 0.05, 0, -0.03);
+  } else if (st === 'pet') {
+    setBone('leftUpperLeg', -1.1, 0, 0.05);
+    setBone('rightUpperLeg', -1.1, 0, -0.05);
+    setBone('leftLowerLeg', 1.6, 0, 0);
+    setBone('rightLowerLeg', 1.6, 0, 0);
+    setBone('spine', 0.3, 0, 0);
+    setBone('leftUpperArm', -0.7, 0, -0.9);
+    setBone('rightUpperArm', -0.5, 0, 0.9);
+    setBone('head', 0.2, 0, 0);
+  } else {
+    setBone('spine', Math.sin(t * 1.4) * 0.02, 0, 0);
+    setBone('head', Math.sin(t * 0.9) * 0.03, Math.sin(t * 0.6) * 0.05, 0);
+    setBone('leftUpperArm', 0.02, 0, -1.12);
+    setBone('rightUpperArm', 0.02, 0, 1.12);
+  }
+  if (vrmHumanoid) vrmHumanoid.update();
+}
+
 /* ============================ 循环 ============================ */
 const t0 = performance.now();
 function tick(now) {
@@ -1545,8 +1670,8 @@ function tick(now) {
   tick._prev = now;
   if (bh.state === 'walk') {
     walkStep(_dt);
-    if (modelRoot && bh.target) {
-      playModel('walk');
+    if ((modelRoot || vrmModel) && bh.target) {
+      if (modelRoot) playModel('walk');
       placeModel(girl.position.x, 0.02, girl.position.z, girl.rotation.y);
     }
   }
@@ -1575,6 +1700,7 @@ function tick(now) {
     tick._last = now;
   }
   const t = (now - t0) / 1000;
+  driveVRM(t);
   if (cur.rotX > -0.5) torso.rotation.z = Math.sin(t * 1.2) * 0.012;
   if (!modelRoot) girl.position.y = cur.root.y + Math.sin(t * 1.35) * 0.006;
   shade.material.emissiveIntensity = 1.05 + Math.sin(t * 2.2) * 0.05;
@@ -1587,8 +1713,12 @@ function tick(now) {
 
 window.addEventListener('resize', resize);
 resize();
-loadCharacter().then(ok => {
-  if (ok) { girl.visible = false; contact.visible = false; }
+loadVRM().then(ok1 => {
+  if (ok1) { girl.visible = false; contact.visible = false; return true; }
+  return loadCharacter().then(ok2 => {
+    if (ok2) { girl.visible = false; contact.visible = false; }
+    return ok2;
+  });
 });
 requestAnimationFrame(tick);
 document.getElementById('loading').style.display = 'none';
