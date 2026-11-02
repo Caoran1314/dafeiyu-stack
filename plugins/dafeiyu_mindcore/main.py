@@ -301,7 +301,30 @@ class MindCore(Star):
 
     # ---------------------------------------------------------------- tick
 
+    def _absorb(self, every: float = 600) -> int:
+        """增量吸收旧库/脑库的新记忆（已在 _seed 里去重）。"""
+        import time as _t
+        now = _t.time()
+        if now - getattr(self, "_last_seed", 0) < every:
+            return 0
+        self._last_seed = now
+        try:
+            added, skipped = self._seed()
+            if added:
+                logger.info(f"[{PLUGIN_NAME}] 增量吸收 {added} 条新记忆（跳过 {skipped}）")
+            return added
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"[{PLUGIN_NAME}] 增量吸收失败：{exc!r}")
+            return 0
+
     def tick(self, dt_seconds: float | None = None) -> dict:
+        self._absorb()
+        try:
+            import asyncio as _aio
+            if not getattr(self, "_auto_task", None):
+                self._auto_task = _aio.create_task(self._auto_backup_loop())
+        except Exception:
+            pass
         """分段衰减 + 海马晋升 + 下沉。dt 用真实经过时间（小时上界保护）。"""
         now = time.time()
         raw_last = self._meta_get("last_tick")
@@ -1203,6 +1226,64 @@ class MindCore(Star):
         except Exception as exc:  # noqa: BLE001
             return f"校验失败：{exc!r}"
 
+
+    def drill_backup(self, name: str = "") -> str:
+        """演练：解压到临时目录并验证每个库能打开。不改动现有数据。"""
+        import shutil
+        import sqlite3
+        import tempfile
+        import zipfile
+
+        try:
+            files = sorted(f for f in os.listdir(self.BACKUP_DIR) if f.endswith(".zip"))
+        except Exception:
+            files = []
+        if not files:
+            return "还没有备份。"
+        target = files[-1]
+        if name:
+            cand = [f for f in files if name in f]
+            if cand:
+                target = cand[-1]
+        path = os.path.join(self.BACKUP_DIR, target)
+        tmp = tempfile.mkdtemp(prefix="dafeiyu_drill_")
+        lines = [target]
+        try:
+            with zipfile.ZipFile(path) as z:
+                bad = z.testzip()
+                if bad:
+                    return "压缩包损坏：" + bad
+                z.extractall(tmp)
+                names = z.namelist()
+            detail = []
+            counts = []
+            for f in sorted(os.listdir(tmp)):
+                p = os.path.join(tmp, f)
+                size = os.path.getsize(p)
+                if not f.endswith(".db"):
+                    detail.append(f + " " + str(size) + "B")
+                    continue
+                con = sqlite3.connect("file:" + p + "?mode=ro", uri=True, timeout=15)
+                try:
+                    ok = con.execute("PRAGMA integrity_check").fetchone()[0]
+                    n = ""
+                    for table in ("memories", "episodes", "facts", "entities"):
+                        try:
+                            c = con.execute("SELECT COUNT(*) FROM " + table).fetchone()[0]
+                            n += table + " " + str(c) + " "
+                        except Exception:
+                            continue
+                    counts.append(f + ":" + n.split()[1] if len(n.split()) > 1 else f)
+                    detail.append(f + " ok")
+                finally:
+                    con.close()
+            logger.info("[%s] 演练详情：%s" % (PLUGIN_NAME, " | ".join(lines + detail)))
+            short = "%s 演练通过｜%d 个库完整性 ok｜可恢复" % (target, len(counts))
+            return short
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+        return chr(10).join(lines)
+
     @filter.command("备份")
     async def cmd_backup(self, event: AstrMessageEvent):
         """把她的全部状态打包。用法：/备份 ｜ /备份 列表"""
@@ -1220,6 +1301,12 @@ class MindCore(Star):
                 p = os.path.join(self.BACKUP_DIR, f)
                 lines.append(f"· {f}（{os.path.getsize(p)/1024:.0f} KB）")
             yield event.plain_result("\n".join(lines))
+            return
+
+        if len(arg) > 1 and arg[1] in ("演练", "drill"):
+            import asyncio
+            r = await asyncio.to_thread(self.drill_backup, arg[2] if len(arg) > 2 else "")
+            yield event.plain_result(r)
             return
 
         if len(arg) > 1 and arg[1] in ("校验", "verify", "check"):

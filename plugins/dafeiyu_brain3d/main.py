@@ -175,6 +175,25 @@ def load_timeline_entries() -> list[dict]:
             db.close()
         except Exception as exc:  # noqa: BLE001
             logger.warning(f"[brain3d] 读 brain.db 失败：{exc!r}")
+    if os.path.exists(CORE_DB):
+        try:
+            db = sqlite3.connect(f"file:{CORE_DB}?mode=ro", uri=True, timeout=10)
+            db.row_factory = sqlite3.Row
+            for r in db.execute(
+                    "SELECT id, text, t_anchor, created_at, importance, kind, pool, weight "
+                    "FROM memories ORDER BY id DESC LIMIT 2000"):
+                ts = float(r["t_anchor"] or r["created_at"] or 0)
+                out.append({
+                    "id": f"mc{r['id']}", "src": "mindcore",
+                    "date": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ts)) if ts else "",
+                    "ts": ts, "text": r["text"] or "",
+                    "importance": float(r["weight"] or r["importance"] or 0.5),
+                    "kind": r["kind"] or "episode",
+                    "people": "", "images": [], "pool": r["pool"] or "",
+                })
+            db.close()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"[brain3d] 读心智库时间线失败：{exc!r}")
     out.sort(key=lambda x: x["ts"])
     return out
 

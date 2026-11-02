@@ -3,7 +3,7 @@ display_name: 大肥鱼拟人管线
 short_desc: 去 AI 腔、一句一行、偶尔错字，让她像人在打字
 desc: 让她像人一样发消息：会延迟、会分条、会打错字、不说 AI 腔、不用冒号破折号和句号
 help: 装上即可用；配置里可以调延迟概率、错字率、单条字数上限、AI 腔黑名单补充
-version: 0.1.0
+version: 1.1.0
 author: zexuan604
 support_platforms:
   - aiocqhttp

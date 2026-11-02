@@ -3,7 +3,7 @@ display_name: 大肥鱼记忆大脑
 short_desc: 本地 SQLite 长期记忆，混合召回 + 人格锚点，不依赖云服务
 desc: 本地 SQLite 长期记忆 + 核心锚点 + 条件人格注入；给机器人两个工具：主动记、主动想
 help: 装上即可用；/brain 看统计，/brain search 关键词 查记忆，/brain export 导出可迁移 JSON
-version: 0.1.0
+version: 1.1.0
 author: zexuan604
 support_platforms:
   - aiocqhttp
