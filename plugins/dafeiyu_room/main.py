@@ -75,30 +75,46 @@ class Room(Star):
 
     # ---------------------------------------------------------------- 状态
 
-    # 她的一天：按时段决定默认在哪、做什么
-    DAY_PLAN = [
-        (0, 7, "sleep", "睡着了"),
-        (7, 9, "window", "刚起来，站窗边发呆"),
-        (9, 12, "desk", "在电脑前工作"),
-        (12, 14, "sofa", "窝沙发吃午饭"),
-        (14, 18, "desk", "在电脑前工作"),
-        (18, 20, "catbed", "蹲下来撸猫"),
-        (20, 22, "tv", "窝在沙发看电视"),
-        (22, 23, "dresser", "在梳妆台前收拾"),
-        (23, 24, "bed", "躺床上刷手机"),
+    # 她的一天：工作日上班，周末在家
+    # (起分钟, 止分钟, mode, label)
+    WEEKDAY = [
+        (0, 410, "sleep", "睡着了"),
+        (410, 460, "window", "起床洗漱"),
+        (460, 505, "desk", "吃早饭"),
+        (505, 1110, "away", "在公司上班"),
+        (1110, 1175, "catbed", "下班回来先撸猫"),
+        (1175, 1320, "tv", "窝在沙发看电视"),
+        (1320, 1380, "dresser", "洗漱收拾"),
+        (1380, 1440, "bed", "躺床上刷手机"),
+    ]
+    WEEKEND = [
+        (0, 510, "sleep", "睡着了"),
+        (510, 600, "window", "睡到自然醒，站窗边"),
+        (600, 720, "desk", "在电脑前"),
+        (720, 840, "sofa", "窝沙发吃午饭"),
+        (840, 1020, "rug", "在地毯上拉伸看书"),
+        (1020, 1140, "catbed", "蹲下来撸猫"),
+        (1140, 1320, "tv", "窝在沙发看电视"),
+        (1320, 1410, "dresser", "洗漱收拾"),
+        (1410, 1440, "bed", "躺床上刷手机"),
     ]
 
+    def _plan(self) -> list:
+        return self.WEEKDAY if time.localtime().tm_wday < 5 else self.WEEKEND
+
     def _base_mode(self) -> str:
-        h = time.localtime().tm_hour
-        for a, b, mode, _ in self.DAY_PLAN:
-            if a <= h < b:
+        now = time.localtime()
+        m = now.tm_hour * 60 + now.tm_min
+        for a, b, mode, _ in self._plan():
+            if a <= m < b:
                 return mode
         return "bed"
 
     def _base_label(self) -> str:
-        h = time.localtime().tm_hour
-        for a, b, mode, label in self.DAY_PLAN:
-            if a <= h < b:
+        now = time.localtime()
+        m = now.tm_hour * 60 + now.tm_min
+        for a, b, mode, label in self._plan():
+            if a <= m < b:
                 return label
         return "在房间"
 
@@ -118,7 +134,7 @@ class Room(Star):
             "phone": "躺床上刷手机",
             "desk": "在电脑前",
             "window": "站在窗边发呆",
-            "away": "不在房间",
+            "away": "在公司上班",
             "sofa": "窝在沙发上",
             "tv": "窝在沙发看电视",
             "catbed": "蹲下来撸猫",
@@ -214,7 +230,8 @@ class Room(Star):
             yield event.plain_result("已回到正常状态。")
             return
         if a:
-            app = {"撸猫": "catbed", "看猫": "catbed", "梳妆": "dresser",
+            app = {"上班": "away", "去上班": "away", "下班": "catbed",
+                   "撸猫": "catbed", "看猫": "catbed", "梳妆": "dresser",
                    "拉伸": "rug", "瑜伽": "rug", "看书": "read",
                    "看电视": "tv", "去沙发": "sofa", "沙发": "sofa",
                    "刷抖音": "douyin", "抖音": "douyin", "刷b站": "bilibili", "b站": "bilibili",
@@ -248,6 +265,7 @@ class Room(Star):
     ACTIVITY_FILE = os.path.join(DATA_DIR, "activity.json")
 
     APP_LABEL = {
+        "away": ("在公司上班", "away"),
         "catbed": ("蹲下来撸猫", "catbed"),
         "dresser": ("在梳妆台前", "dresser"),
         "rug": ("在地毯上拉伸", "rug"),
@@ -292,6 +310,7 @@ class Room(Star):
         bubbles = a.get("bubbles")
         if not isinstance(bubbles, list) or not bubbles:
             bubbles = {
+                "away": ["开会开到现在", "今天好忙", "下班了"],
                 "catbed": ["豆豆你又胖了", "妞妞别咬我手指", "点点过来"],
                 "dresser": ["头发又翘了", "涂个口红"],
                 "rug": ["伸个懒腰", "坐久了腰疼"],

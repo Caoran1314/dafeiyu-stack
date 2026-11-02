@@ -856,7 +856,7 @@ const POSE = {
     armL: -0.5, armR: -0.5, armLZ: 0.16, armRZ: -0.16, fore: -1.0, head: -0.16, phone: 0 }
 };
 const MODE_POSE = { sleep: 'sleep', phone: 'lie', desk: 'sit', window: 'window', away: 'stand' };
-const MODE_ANCHOR = { sleep: 'sleep', phone: 'bed', desk: 'desk', window: 'window', tv: 'tv', away: 'center', bed: 'bed', sofa: 'sofa', catbed: 'catbed', dresser: 'dresser', rug: 'rug', read: 'sofa' };
+const MODE_ANCHOR = { sleep: 'sleep', phone: 'bed', desk: 'desk', window: 'window', tv: 'tv', away: 'away', bed: 'bed', sofa: 'sofa', catbed: 'catbed', dresser: 'dresser', rug: 'rug', read: 'sofa' };
 
 const cur = {
   root: new THREE.Vector3(POSE.sleep.root[0], POSE.sleep.root[1], POSE.sleep.root[2]),
@@ -938,7 +938,25 @@ const bh = {
   walkPhase: 0
 };
 
+function setGirlVisible(v) {
+  girl.visible = v;
+  if (contact) contact.visible = v;
+}
+
 function applyAnchor(name, instant) {
+  if (name === 'away') {
+    // 上班：她不在房间
+    setGirlVisible(false);
+    bh.anchor = 'away';
+    bh.state = 'idle';
+    poseTarget = Object.assign({}, POSE.stand);
+    setTv(false);
+    poseTarget.rotY = 0.4;
+    camGoal = CAM.away;
+    camBlend = 0;
+    return;
+  }
+  setGirlVisible(true);
   const a = ANCHOR[name] || ANCHOR.center;
   const p = Object.assign({}, POSE[a.pose] || POSE.stand);
   p.root = [a.pos[0], a.pos[1], a.pos[2]];
