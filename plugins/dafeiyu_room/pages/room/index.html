@@ -82,6 +82,12 @@ controls.maxDistance = 8;
 controls.maxPolarAngle = Math.PI * 0.5;
 controls.enablePan = false;
 
+// 手动转动视角时，暂停自动跟随；20 秒没动或状态切换后恢复
+let camAuto = true;
+let camHoldAt = 0;
+controls.addEventListener('start', () => { camAuto = false; camHoldAt = performance.now(); });
+controls.addEventListener('end', () => { camHoldAt = performance.now(); });
+
 function resize() {
   const w = canvas.clientWidth, h = canvas.clientHeight;
   renderer.setSize(w, h, false);
@@ -964,6 +970,7 @@ function applyAnchor(name, instant) {
   poseTarget = p;
   bh.anchor = name;
   const camName = ANCHOR_CAM[name];
+  camAuto = true;
   if (camName && CAM[camName]) { camGoal = CAM[camName]; camBlend = 0; }
   if (ANCHOR_CAM[name] && CAM[ANCHOR_CAM[name]]) { camGoal = CAM[ANCHOR_CAM[name]]; camBlend = 0; }
   setTv(name === 'tv');
@@ -1080,6 +1087,7 @@ function applyMode(m) {
   const anchor = MODE_ANCHOR[m];
   if (anchor && bh.anchor !== anchor) {
     goTo(anchor);                       // 先走过去，到位后自动坐下/躺下
+    camAuto = true;
     if (CAM[anchor]) { camGoal = CAM[anchor]; camBlend = 0; }
     return;
   }
@@ -1113,10 +1121,13 @@ function tick(now) {
   if (bh.state === 'walk') { walkStep(_dt); }
   else { applyPose(poseTarget, 0.05); }
 
-  camBlend = Math.min(1, camBlend + 0.015);
-  const e = camBlend * camBlend * (3 - 2 * camBlend);
-  camera.position.lerp(new THREE.Vector3(camGoal.pos[0], camGoal.pos[1], camGoal.pos[2]), 0.02 * e);
-  controls.target.lerp(new THREE.Vector3(camGoal.target[0], camGoal.target[1], camGoal.target[2]), 0.024 * e);
+  if (!camAuto && performance.now() - camHoldAt > 20000) camAuto = true;
+  if (camAuto) {
+    camBlend = Math.min(1, camBlend + 0.015);
+    const e = camBlend * camBlend * (3 - 2 * camBlend);
+    camera.position.lerp(new THREE.Vector3(camGoal.pos[0], camGoal.pos[1], camGoal.pos[2]), 0.02 * e);
+    controls.target.lerp(new THREE.Vector3(camGoal.target[0], camGoal.target[1], camGoal.target[2]), 0.024 * e);
+  }
 
   updateCats(_dt);
 
