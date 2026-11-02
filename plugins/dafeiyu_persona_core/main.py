@@ -222,12 +222,17 @@ class PersonaCore(Star):
             ok, changed = (True, {})
             mode = str(self._c("delta_mode", "heuristic") or "heuristic")
             dp = None
-            if mode == "model":
+            if mode == "model" and (kind != "none" or len(txt.strip()) >= 12):
                 dp = await self._propose_by_model(txt)
             if dp is None and kind != "none" and s > 0:
                 dp = self._propose(kind, s)
             if dp and any(abs(v) > 1e-6 for v in dp.values()):
                 ok, changed = self._apply(dp)
+
+            from_ = "model" if dp is not None else "heuristic"
+            logger.info(
+                f"[{PLUGIN_NAME}] 事件={kind} s={s:.2f} 模式={from_} 应用={ok} "
+                f"变化={changed or '无'} 强度={strength(self.P):.3f}")
 
             if not self._c("inject", True):
                 return
@@ -239,9 +244,6 @@ class PersonaCore(Star):
                         break
                     except Exception:
                         continue
-            logger.info(
-                f"[{PLUGIN_NAME}] 事件={kind} s={s:.2f} 应用={ok} "
-                f"变化={changed or '无'} 强度={strength(self.P):.3f}")
         except Exception as exc:  # noqa: BLE001
             logger.warning(f"[{PLUGIN_NAME}] 处理失败已忽略：{exc!r}")
 
