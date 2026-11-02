@@ -26,3 +26,22 @@
 ## 命令
 
 `/房间` 查看当前状态。
+
+## 常见问题
+
+**页面一直停在「正在搭建她的房间」，黑屏**
+
+三个东西缺一个就会卡住（浏览器控制台会有 404）：
+
+```
+pages/room/three/build/three.module.js
+pages/room/three/examples/jsm/utils/BufferGeometryUtils.js
+pages/room/three/examples/jsm/utils/SkeletonUtils.js
+```
+
+前两个是 three 主库，后两个是 `GLTFLoader.js` 依赖的工具模块（three r187 起 requirement）。
+缺 `BufferGeometryUtils` / `SkeletonUtils` 时页面不会报错，只是永远不结束加载。
+
+**画面里没有人，只有房间**
+
+正常会回退到内置卡通形象；如果连卡通形象都没有，看控制台是否有 WebGL 报错。

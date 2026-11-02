@@ -401,6 +401,7 @@ function outline(mesh, k) {
 }
 
 const girl = new THREE.Group();
+girl.scale.setScalar(1.25);   // 略放大，贴近床铺比例
 scene.add(girl);
 
 const hips = new THREE.Group();
@@ -713,9 +714,9 @@ const POSE = {
     armL: 0.05, armR: 0.05, armLZ: 0.24, armRZ: -0.24, fore: -0.15, head: 0, phone: 0 },
   sit: { root: [1.65, 0.52, -1.34], rotX: 0, hips: 0.04, thigh: -1.5, shin: 1.42, torso: 0.14,
     armL: -0.95, armR: -0.95, armLZ: 0.12, armRZ: -0.12, fore: -0.9, head: -0.04, phone: 0.1 },
-  lie: { root: [-1.95, 0.68, -1.45], rotX: -Math.PI / 2, hips: 0.1, thigh: -0.26, shin: 0.34, torso: 0.05,
-    armL: -0.4, armR: -0.95, armLZ: 0.12, armRZ: -0.12, fore: -1.0, head: 0.16, phone: 2.2 },
-  sleep: { root: [-1.95, 0.68, -1.45], rotX: -Math.PI / 2, hips: 0.05, thigh: -0.14, shin: 0.24, torso: 0.03,
+  lie: { root: [-1.95, 0.66, -1.92], rotX: -Math.PI / 2, hips: 0.05, thigh: -0.14, shin: 0.26, torso: 0.03,
+    armL: -0.12, armR: -0.55, armLZ: 0.14, armRZ: -0.14, fore: -0.45, head: 0.12, phone: 2.2 },
+  sleep: { root: [-1.95, 0.66, -1.92], rotX: -Math.PI / 2, hips: 0.05, thigh: -0.14, shin: 0.24, torso: 0.03,
     armL: -0.12, armR: -0.12, armLZ: 0.14, armRZ: -0.14, fore: -0.3, head: 0.12, phone: 0 },
   window: { root: [-2.9, 0.44, -0.7], rotX: 0, hips: 0, thigh: 0, shin: 0, torso: 0.05,
     armL: -0.5, armR: -0.5, armLZ: 0.16, armRZ: -0.16, fore: -1.0, head: -0.16, phone: 0 }
@@ -761,8 +762,8 @@ applyPose(POSE.sleep, 1);
 
 /* ============================ 相机 ============================ */
 const CAM = {
-  sleep: { pos: [0.9, 1.15, 0.7], target: [-1.9, 0.72, -1.5] },
-  phone: { pos: [0.2, 1.1, 0.85], target: [-1.9, 0.75, -1.45] },
+  sleep: { pos: [-0.2, 1.05, 0.25], target: [-1.95, 0.65, -1.95] },
+  phone: { pos: [-0.35, 0.95, 0.05], target: [-1.95, 0.62, -2.0] },
   desk: { pos: [2.25, 1.2, 0.6], target: [1.62, 0.85, -1.85] },
   window: { pos: [-0.9, 1.25, 0.9], target: [-2.4, 0.9, -0.6] },
   away: { pos: [1.4, 1.3, 2.0], target: [-0.9, 0.7, -0.4] }
