@@ -708,30 +708,64 @@ function switchAction(slot) {
   next.reset().fadeIn(0.3).play();
 }
 
+
+/* ============================ 电视 ============================ */
+const tvUnit = new THREE.Group();
+tvUnit.position.set(-2.35, 0, 3.02);
+tvUnit.rotation.y = Math.PI;
+room.add(tvUnit);
+tvUnit.add(put(softBox(1.7, 0.42, 0.42, M.wood, .04), 0, 0.21, 0));
+tvUnit.add(put(softBox(1.6, 0.03, 0.36, M.dark, .01), 0, 0.43, 0));
+
+const tvPanel = new THREE.Group();
+tvPanel.position.set(0, 1.28, -0.02);
+tvUnit.add(tvPanel);
+tvPanel.add(put(softBox(1.62, 0.94, 0.05, M.dark, .02), 0, 0, 0));
+const tvScreenMat = new THREE.MeshStandardMaterial({
+  color: 0x0a1018, emissive: 0x2a6f8f, emissiveIntensity: 0.0, roughness: 0.35
+});
+const tvScreen = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.82), tvScreenMat);
+tvScreen.position.z = 0.032;
+tvPanel.add(tvScreen);
+
+const tvGlow = new THREE.PointLight(0x74c8ff, 0, 5.5, 2);
+tvGlow.position.set(0, 1.3, 0.7);
+tvUnit.add(tvGlow);
+
+let tvOn = false;
+function setTv(on) {
+  tvOn = !!on;
+  tvScreenMat.emissiveIntensity = tvOn ? 1.15 : 0.0;
+  tvGlow.intensity = tvOn ? 1.35 : 0.0;
+}
+
 /* ============================ 姿势 ============================ */
 const POSE = {
-  stand: { root: [-1.0, 0.44, 0.2], rotX: 0, hips: 0, thigh: 0, shin: 0, torso: 0,
+  walk: { root: [0, 0.44, 1.6], rotX: 0, rotY: 0, hips: 0, thigh: 0, shin: 0, torso: 0.02,
+    armL: 0.05, armR: 0.05, armLZ: 0.2, armRZ: -0.2, fore: -0.2, head: 0, phone: 0 },
+  stand: { root: [-1.0, 0.44, 0.2], rotX: 0, rotY: 0, hips: 0, thigh: 0, shin: 0, torso: 0,
     armL: 0.05, armR: 0.05, armLZ: 0.24, armRZ: -0.24, fore: -0.15, head: 0, phone: 0 },
-  sit: { root: [1.65, 0.52, -1.34], rotX: 0, hips: 0.04, thigh: -1.5, shin: 1.42, torso: 0.14,
+  sit: { root: [1.65, 0.52, -1.34], rotX: 0, rotY: Math.PI, hips: 0.04, thigh: -1.5, shin: 1.42, torso: 0.14,
     armL: -0.95, armR: -0.95, armLZ: 0.12, armRZ: -0.12, fore: -0.9, head: -0.04, phone: 0.1 },
-  lie: { root: [-1.95, 0.66, -1.92], rotX: -Math.PI / 2, hips: 0.05, thigh: -0.14, shin: 0.26, torso: 0.03,
+  lie: { root: [-1.95, 0.66, -1.92], rotX: -Math.PI / 2, rotY: 0, hips: 0.05, thigh: -0.14, shin: 0.26, torso: 0.03,
     armL: -0.12, armR: -0.55, armLZ: 0.14, armRZ: -0.14, fore: -0.45, head: 0.12, phone: 2.2 },
-  sleep: { root: [-1.95, 0.66, -1.92], rotX: -Math.PI / 2, hips: 0.05, thigh: -0.14, shin: 0.24, torso: 0.03,
+  sleep: { root: [-1.95, 0.66, -1.92], rotX: -Math.PI / 2, rotY: 0, hips: 0.05, thigh: -0.14, shin: 0.24, torso: 0.03,
     armL: -0.12, armR: -0.12, armLZ: 0.14, armRZ: -0.14, fore: -0.3, head: 0.12, phone: 0 },
-  window: { root: [-2.9, 0.44, -0.7], rotX: 0, hips: 0, thigh: 0, shin: 0, torso: 0.05,
+  window: { root: [-2.9, 0.44, -0.7], rotX: 0, rotY: 0.9, hips: 0, thigh: 0, shin: 0, torso: 0.05,
     armL: -0.5, armR: -0.5, armLZ: 0.16, armRZ: -0.16, fore: -1.0, head: -0.16, phone: 0 }
 };
 const MODE_POSE = { sleep: 'sleep', phone: 'lie', desk: 'sit', window: 'window', away: 'stand' };
+const MODE_ANCHOR = { sleep: 'sleep', phone: 'bed', desk: 'desk', window: 'window', tv: 'tv', away: 'center' };
 
 const cur = {
   root: new THREE.Vector3(POSE.sleep.root[0], POSE.sleep.root[1], POSE.sleep.root[2]),
-  rotX: POSE.sleep.rotX, hips: 0, thigh: 0, shin: 0, torso: 0,
+  rotX: POSE.sleep.rotX, rotY: 0, hips: 0, thigh: 0, shin: 0, torso: 0,
   armL: 0, armR: 0, armLZ: 0, armRZ: 0, fore: 0, head: 0, phone: 0
 };
 let mode = '';
 let poseTarget = POSE.sleep;
 
-const KEYS = ['rotX', 'hips', 'thigh', 'shin', 'torso', 'armL', 'armR', 'armLZ', 'armRZ', 'fore', 'head', 'phone'];
+const KEYS = ['rotX', 'rotY', 'hips', 'thigh', 'shin', 'torso', 'armL', 'armR', 'armLZ', 'armRZ', 'fore', 'head', 'phone'];
 
 function applyPose(p, k) {
   cur.root.lerp(new THREE.Vector3(p.root[0], p.root[1], p.root[2]), k);
@@ -741,6 +775,7 @@ function applyPose(p, k) {
   }
   girl.position.copy(cur.root);
   girl.rotation.x = cur.rotX;
+  girl.rotation.y = cur.rotY;
   hips.rotation.x = cur.hips;
   torso.rotation.x = cur.torso;
   head.rotation.x = cur.head;
@@ -760,15 +795,107 @@ function applyPose(p, k) {
 }
 applyPose(POSE.sleep, 1);
 
+
+/* ============================ 行为（走动 / 坐下 / 看电视） ============================ */
+const ANCHOR = {
+  bed:   { pos: [-1.95, 0.66, -1.92], rotY: 0, pose: 'lie',  label: '躺床上刷手机' },
+  sleep: { pos: [-1.95, 0.66, -1.92], rotY: 0, pose: 'sleep', label: '睡着了' },
+  sofa:  { pos: [-2.35, 0.56, 1.15], rotY: 0.34, pose: 'sitSofa', label: '窝在沙发上' },
+  tv:    { pos: [-2.35, 0.56, 1.15], rotY: 0.34, pose: 'sitSofa', label: '窝在沙发看电视' },
+  desk:  { pos: [1.65, 0.52, -1.34], rotY: Math.PI, pose: 'sit', label: '坐在电脑前' },
+  window:{ pos: [-2.9, 0.44, -0.7], rotY: 0.9, pose: 'window', label: '窗边发呆' },
+  center:{ pos: [-0.9, 0.44, 0.4], rotY: 0.2, pose: 'stand', label: '站在房间中间' }
+};
+
+// 沙发坐姿：膝盖并拢向前，身体略后仰
+POSE.sitSofa = { root: [-2.35, 0.56, 1.15], rotX: 0, rotY: 0.34, hips: 0.02,
+  thigh: -1.42, shin: 1.2, torso: -0.05, armL: -0.5, armR: -0.5,
+  armLZ: 0.1, armRZ: -0.1, fore: -0.75, head: 0.02, phone: 0 };
+
+const bh = {
+  state: 'idle',          // idle | walk | sit | lie | sleep | watch
+  anchor: 'bed',
+  target: null,           // {x, z, anchorName}
+  facing: 0,
+  timer: 0,
+  walkPhase: 0
+};
+
+function applyAnchor(name, instant) {
+  const a = ANCHOR[name] || ANCHOR.center;
+  const p = Object.assign({}, POSE[a.pose] || POSE.stand);
+  p.root = [a.pos[0], a.pos[1], a.pos[2]];
+  p.rotY = a.rotY;
+  poseTarget = p;
+  bh.anchor = name;
+  const camName = ANCHOR_CAM[name];
+  if (camName && CAM[camName]) { camGoal = CAM[camName]; camBlend = 0; }
+  if (ANCHOR_CAM[name] && CAM[ANCHOR_CAM[name]]) { camGoal = CAM[ANCHOR_CAM[name]]; camBlend = 0; }
+  setTv(name === 'tv');
+  if (instant) { applyPose(p, 1); }
+}
+
+function goTo(name, thenPose) {
+  const a = ANCHOR[name] || ANCHOR.center;
+  bh.state = 'walk';
+  bh.target = { x: a.pos[0], z: a.pos[2], name: name, thenPose: thenPose || a.pose };
+  bh.facing = Math.atan2(a.pos[0] - girl.position.x, a.pos[2] - girl.position.z);
+  poseTarget = Object.assign({}, POSE.walk);
+}
+
+function walkStep(dt) {
+  if (!bh.target) return;
+  const dx = bh.target.x - girl.position.x;
+  const dz = bh.target.z - girl.position.z;
+  const dist = Math.hypot(dx, dz);
+  const speed = 0.75;
+  if (dist < 0.07) {
+    bh.state = 'idle';
+    const t = bh.target;
+    bh.target = null;
+    applyAnchor(t.name, false);
+    return;
+  }
+  const step = Math.min(speed * dt, dist);
+  girl.position.x += (dx / dist) * step;
+  girl.position.z += (dz / dist) * step;
+  const want = Math.atan2(dx, dz);
+  let diff = want - girl.rotation.y;
+  while (diff > Math.PI) diff -= Math.PI * 2;
+  while (diff < -Math.PI) diff += Math.PI * 2;
+  girl.rotation.y += diff * Math.min(1, dt * 8);
+  bh.walkPhase += dt * 7.2;
+  const sw = Math.sin(bh.walkPhase);
+  cur.rotX = 0;
+  cur.thigh = 0.55 * sw;
+  cur.shin = Math.max(0, -sw) * 0.7;
+  cur.armL = -0.35 * sw;
+  cur.armR = 0.35 * sw;
+  cur.torso = 0.04;
+  cur.head = 0;
+  girl.position.y = Math.abs(Math.sin(bh.walkPhase)) * 0.02 + 0.44;
+  hips.rotation.x = 0;
+  torso.rotation.x = cur.torso;
+  legL.thigh.rotation.x = cur.thigh;
+  legR.thigh.rotation.x = -cur.thigh;
+  legL.shin.rotation.x = cur.shin;
+  legR.shin.rotation.x = Math.max(0, sw) * 0.7;
+  armL.up.rotation.x = cur.armL;
+  armR.up.rotation.x = cur.armR;
+}
+
 /* ============================ 相机 ============================ */
 const CAM = {
   sleep: { pos: [-0.2, 1.05, 0.25], target: [-1.95, 0.65, -1.95] },
   phone: { pos: [-0.35, 0.95, 0.05], target: [-1.95, 0.62, -2.0] },
   desk: { pos: [2.25, 1.2, 0.6], target: [1.62, 0.85, -1.85] },
   window: { pos: [-0.9, 1.25, 0.9], target: [-2.4, 0.9, -0.6] },
-  away: { pos: [1.4, 1.3, 2.0], target: [-0.9, 0.7, -0.4] }
+  away: { pos: [1.4, 1.3, 2.0], target: [-0.9, 0.7, -0.4] },
+  tv: { pos: [-0.85, 1.42, 0.35], target: [-2.30, 0.90, 2.10] },
+  sofa: { pos: [-1.15, 1.35, 2.95], target: [-2.32, 0.92, 1.15] }
 };
 let camGoal = CAM.sleep, camBlend = 0;
+const ANCHOR_CAM = { tv: 'tv', sofa: 'sofa', bed: 'phone', sleep: 'sleep', desk: 'desk', window: 'window', center: 'away' };
 
 /* ============================ 灯光 ============================ */
 scene.add(new THREE.HemisphereLight(0xdff0ff, 0x9fb4c6, 1.05));
@@ -810,9 +937,15 @@ function setMood(m) {
   document.getElementById('b-oxy').style.width = (oxy * 100) + '%';
 }
 function applyMode(m) {
-  const p = MODE_POSE[m] || 'stand';
   if (m === mode) return;
   mode = m;
+  const anchor = MODE_ANCHOR[m];
+  if (anchor && bh.anchor !== anchor) {
+    goTo(anchor);                       // 先走过去，到位后自动坐下/躺下
+    if (CAM[anchor]) { camGoal = CAM[anchor]; camBlend = 0; }
+    return;
+  }
+  const p = MODE_POSE[m] || 'stand';
   poseTarget = POSE[p] || POSE.stand;
   switchAction(p === 'sleep' ? 'sleep' : (p === 'sit' ? 'work' : (p === 'lie' ? 'phone' : 'idle')));
   camGoal = CAM[p] || CAM.away;
@@ -837,7 +970,10 @@ poll();
 /* ============================ 循环 ============================ */
 const t0 = performance.now();
 function tick(now) {
-  applyPose(poseTarget, 0.05);
+  const _dt = Math.min(0.1, (now - (tick._prev || now)) / 1000);
+  tick._prev = now;
+  if (bh.state === 'walk') { walkStep(_dt); }
+  else { applyPose(poseTarget, 0.05); }
 
   camBlend = Math.min(1, camBlend + 0.015);
   const e = camBlend * camBlend * (3 - 2 * camBlend);

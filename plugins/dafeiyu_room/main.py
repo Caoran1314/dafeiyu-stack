@@ -178,7 +178,7 @@ class Room(Star):
 
     @filter.command("房间")
     async def cmd_room(self, event: AstrMessageEvent, action: str = "", minutes: str = "30"):
-        """看状态或设置活动。用法：/房间  ｜  /房间 刷抖音 30 ｜  /房间 结束"""
+        """看状态或设置活动。用法：/房间  ｜  /房间 看电视 60 ｜  /房间 去看电视 ｜  /房间 结束"""
         a = str(action or "").strip()
         if a in ("结束", "stop", "清空"):
             try:
@@ -190,7 +190,8 @@ class Room(Star):
             yield event.plain_result("已回到正常状态。")
             return
         if a:
-            app = {"刷抖音": "douyin", "抖音": "douyin", "刷b站": "bilibili", "b站": "bilibili",
+            app = {"看电视": "tv", "去沙发": "sofa", "沙发": "sofa",
+                   "刷抖音": "douyin", "抖音": "douyin", "刷b站": "bilibili", "b站": "bilibili",
                    "刷快手": "kuaishou", "刷小红书": "xiaohongshu", "刷微博": "weibo",
                    "打游戏": "game", "看书": "reading", "听歌": "music"}.get(a, "douyin")
             try:
@@ -221,6 +222,8 @@ class Room(Star):
     ACTIVITY_FILE = os.path.join(DATA_DIR, "activity.json")
 
     APP_LABEL = {
+        "tv": ("窝在沙发看电视", "tv"),
+        "sofa": ("窝在沙发上", "sofa"),
         "douyin": ("刷抖音", "phone"),
         "tiktok": ("刷 TikTok", "phone"),
         "bilibili": ("刷 B 站", "phone"),
@@ -260,6 +263,8 @@ class Room(Star):
         bubbles = a.get("bubbles")
         if not isinstance(bubbles, list) or not bubbles:
             bubbles = {
+                "tv": ["这剧还挺上头", "换个台看看", "广告好长啊"],
+                "sofa": ["瘫一会儿", "沙发好软"],
                 "douyin": ["这个笑死我", "又刷到卖货的", "再看一条就睡"],
                 "bilibili": ["这个 UP 主有意思", "码住", "先看三分钟"],
             }.get(app, ["嗯…", "有意思"])
