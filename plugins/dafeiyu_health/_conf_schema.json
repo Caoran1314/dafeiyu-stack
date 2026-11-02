@@ -1,0 +1,19 @@
+{
+  "interval_seconds": {
+    "description": "自检间隔（秒）",
+    "type": "int",
+    "default": 1800,
+    "hint": "默认 30 分钟；改小更灵敏但日志更多"
+  },
+  "notify_umo": {
+    "description": "告警接收会话",
+    "type": "string",
+    "default": "",
+    "hint": "在要收告警的会话里发 /健康配置 自动写入"
+  },
+  "disk_min_pct": {
+    "description": "磁盘剩余低于这个百分比就告警",
+    "type": "float",
+    "default": 5
+  }
+}

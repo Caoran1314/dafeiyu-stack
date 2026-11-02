@@ -18,6 +18,7 @@
 | `dafeiyu_voice` | 克隆音色 | 需要 SoVITS + 参考音频，`enable=true` |
 | `dafeiyu_photo` | 话题命中时发真实照片 | `enable=true` |
 | `dafeiyu_eval` | 拟人度测评（只看不改） | 可选 |
+| `dafeiyu_health` | 健康监控：库/状态/磁盘出问题主动告警 | 建议装 |
 
 ## 展示组（按需）
 

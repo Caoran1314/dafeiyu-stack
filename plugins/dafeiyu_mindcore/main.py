@@ -1022,6 +1022,157 @@ class MindCore(Star):
         ]
         yield event.plain_result("\n".join(str(x) for x in lines))
 
+
+    # ---------------------------------------------------------------- 备份
+
+    BACKUP_DIR = os.path.join(DATA_DIR, "backups")
+    PERSONA_FILE = "/AstrBot/data/plugin_data/dafeiyu_persona_core/persona_core.json"
+
+    BACKUP_ITEMS = [
+        (CORE_DB, "memory_core.db"),
+        (OLD_DB, "memory.db"),
+        (BRAIN_DB, "brain.db"),
+        (HORMONE_FILE, "hormones.json"),
+        (PERSONA_FILE, "persona_core.json"),
+    ]
+
+    @staticmethod
+    def _copy_sqlite(src: str, dst: str) -> int:
+        """用 sqlite backup API 拷库，避开 WAL 只拷主文件丢数据的问题。"""
+        import sqlite3
+        con = sqlite3.connect(f"file:{src}?mode=ro", uri=True, timeout=15)
+        try:
+            out = sqlite3.connect(dst, timeout=15)
+            try:
+                con.backup(out)
+            finally:
+                out.close()
+        finally:
+            con.close()
+        return os.path.getsize(dst)
+
+    def make_backup(self) -> dict:
+        import hashlib
+        import shutil
+        import sqlite3
+        import time as _t
+        import zipfile
+
+        os.makedirs(self.BACKUP_DIR, exist_ok=True)
+        stamp = _t.strftime("%Y%m%d_%H%M%S")
+        tmpdir = os.path.join(self.BACKUP_DIR, f".tmp_{stamp}")
+        os.makedirs(tmpdir, exist_ok=True)
+        manifest = {"created": stamp, "items": [], "mindcore": self.summary()}
+        try:
+            for src, arc in self.BACKUP_ITEMS:
+                if not os.path.exists(src):
+                    manifest["items"].append({"name": arc, "skipped": "not found"})
+                    continue
+                dst = os.path.join(tmpdir, arc)
+                if src.endswith(".db"):
+                    self._copy_sqlite(src, dst)
+                else:
+                    shutil.copyfile(src, dst)
+                size = os.path.getsize(dst)
+                h = hashlib.sha256(open(dst, "rb").read()).hexdigest()[:16]
+                manifest["items"].append({"name": arc, "size": size, "sha256_16": h})
+        finally:
+            try:
+                self.db.commit()
+            except Exception:
+                pass
+
+        out = os.path.join(self.BACKUP_DIR, f"backup_{stamp}.zip")
+        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
+            for f in sorted(os.listdir(tmpdir)):
+                z.write(os.path.join(tmpdir, f), f)
+            manifest["items"].append({"name": "hormones/persona 已含", "skipped": "meta"})
+            z.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False, indent=1))
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+        # 只留最近 7 个
+        files = sorted([f for f in os.listdir(self.BACKUP_DIR) if f.endswith(".zip")])
+        for old in files[:-int(self._c("backup_keep", 7))]:
+            try:
+                os.remove(os.path.join(self.BACKUP_DIR, old))
+            except Exception:
+                pass
+
+        manifest["path"] = out
+        manifest["zip_size"] = os.path.getsize(out)
+        return manifest
+
+    def verify_backup(self, path: str) -> str:
+        """重新打开备份，校验每个文件能读出来。"""
+        import zipfile
+        try:
+            with zipfile.ZipFile(path) as z:
+                bad = z.testzip()
+                if bad:
+                    return f"损坏：{bad}"
+                names = z.namelist()
+                if "manifest.json" not in names:
+                    return "缺 manifest.json"
+                m = json.loads(z.read("manifest.json").decode())
+                got = [i["name"] for i in m.get("items", []) if i.get("size")]
+            return f"校验通过（{len(got)} 个文件：{', '.join(got)}）"
+        except Exception as exc:  # noqa: BLE001
+            return f"校验失败：{exc!r}"
+
+    @filter.command("备份")
+    async def cmd_backup(self, event: AstrMessageEvent):
+        """把她的全部状态打包。用法：/备份 ｜ /备份 列表"""
+        arg = str(getattr(event, "message_str", "") or "").split()
+        if len(arg) > 1 and arg[1] in ("列表", "list"):
+            try:
+                files = sorted(f for f in os.listdir(self.BACKUP_DIR) if f.endswith(".zip"))
+            except Exception:
+                files = []
+            if not files:
+                yield event.plain_result("还没有备份。发 /备份 生成一个。")
+                return
+            lines = [f"备份 {len(files)} 个："]
+            for f in files[-8:]:
+                p = os.path.join(self.BACKUP_DIR, f)
+                lines.append(f"· {f}（{os.path.getsize(p)/1024:.0f} KB）")
+            yield event.plain_result("\n".join(lines))
+            return
+
+        if len(arg) > 1 and arg[1] in ("校验", "verify", "check"):
+            try:
+                files = sorted(f for f in os.listdir(self.BACKUP_DIR) if f.endswith(".zip"))
+            except Exception:
+                files = []
+            if not files:
+                yield event.plain_result("还没有备份。")
+                return
+            target = files[-1]
+            if len(arg) > 2:
+                cand = [f for f in files if arg[2] in f]
+                target = cand[-1] if cand else target
+            r = self.verify_backup(os.path.join(self.BACKUP_DIR, target))
+            yield event.plain_result(f"{target}\n{r}")
+            return
+
+        yield event.plain_result("正在打包…")
+        try:
+            import asyncio
+            m = await asyncio.to_thread(self.make_backup)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"[{PLUGIN_NAME}] 备份失败：{exc!r}")
+            yield event.plain_result(f"备份失败：{exc!r}")
+            return
+        v = self.verify_backup(m["path"])
+        detail = []
+        for it in m["items"]:
+            sz = it.get("size")
+            if sz:
+                detail.append(f"· {it['name']} " + (f"{sz/1024:.0f} KB" if sz >= 1024 else f"{sz} 字节"))
+        yield event.plain_result(
+            "备份完成\n" + "\n".join(detail) +
+            f"\n\n{m['path'].split('/')[-1]}（{m['zip_size']/1024:.0f} KB）\n{v}"
+        )
+
     # ---------------------------------------------------------------- 指令
 
 

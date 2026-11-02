@@ -178,5 +178,22 @@
     "astrbot_version": "\">=4.24.0\"",
     "download_url": "https://cdn.jsdelivr.net/gh/Caoran1314/dafeiyu-stack@main/plugin-source/zips/dafeiyu_douyin_bridge-0.1.0.zip",
     "logo": ""
+  },
+  "Caoran1314/dafeiyu_health": {
+    "author": "Caoran1314",
+    "name": "dafeiyu_health",
+    "display_name": "大肥鱼健康监控",
+    "short_desc": "她挂了会主动告诉你",
+    "version": "0.1.0",
+    "repo": "https://github.com/Caoran1314/dafeiyu-stack/tree/main/plugins/dafeiyu_health",
+    "desc": "定时自检记忆库、状态文件、磁盘与插件目录；出硬错误时主动推 QQ 告警。平时完全安静。",
+    "category": "工具",
+    "support_platforms": [
+      "aiocqhttp",
+      "webchat"
+    ],
+    "astrbot_version": "\">=4.24.0\"",
+    "download_url": "https://cdn.jsdelivr.net/gh/Caoran1314/dafeiyu-stack@main/plugin-source/zips/dafeiyu_health-0.1.0.zip",
+    "logo": ""
   }
 }
