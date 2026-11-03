@@ -1552,6 +1552,28 @@ window.__cam = () => ({ cam: camera.position.toArray().map(v => +v.toFixed(2)),
   goal: camGoal ? camGoal.pos.map(v => +v.toFixed(2)) : null,
   anchor: bh.anchor, auto: camAuto, free: freeCam });
 
+window.__bones = () => {
+  const out = {};
+  ['hips','chest','head','armL','foreL','armR','foreR','legL','shinL'].forEach(k => {
+    const b = skel[k];
+    if (!b) { out[k] = null; return; }
+    const v = new THREE.Vector3();
+    b.getWorldPosition(v);
+    out[k] = [ +v.x.toFixed(2), +v.y.toFixed(2), +v.z.toFixed(2) ];
+  });
+  return out;
+};
+
+window.__poseTest = (spec) => {
+  window.__freeze = true;
+  Object.keys(spec).forEach(k => {
+    const b = skel[k];
+    if (b) b.rotation.set(spec[k][0] || 0, spec[k][1] || 0, spec[k][2] || 0);
+  });
+  if (vrmHumanoid) vrmHumanoid.update();
+  return Object.keys(skel);
+};
+
 window.__setCam = (px, py, pz, tx, ty, tz) => {
   camAuto = false; freeCam = true;
   camera.position.set(px, py, pz);
@@ -1779,7 +1801,30 @@ function setBone(name, x, y, z) {
   b.rotation.set(x || 0, y || 0, z || 0);
 }
 
+
+// 把一根骨骼“指向”世界方向 dir（不猜欧拉角，直接算四元数）
+function aimBone(boneKey, childKey, dir, blend) {
+  const bone = skel[boneKey], child = skel[childKey];
+  if (!bone || !child) return;
+  bone.updateWorldMatrix(true, false);
+  child.updateWorldMatrix(true, false);
+  const a = new THREE.Vector3(), b = new THREE.Vector3();
+  bone.getWorldPosition(a);
+  child.getWorldPosition(b);
+  const cur = b.sub(a).normalize();
+  const want = dir.clone().normalize();
+  const R = new THREE.Quaternion().setFromUnitVectors(cur, want);
+  const pw = new THREE.Quaternion();
+  (bone.parent || scene).getWorldQuaternion(pw);
+  const local = pw.clone().invert().multiply(R).multiply(pw);
+  if (blend !== undefined && blend < 1) {
+    local.slerp(new THREE.Quaternion(), 1 - blend);
+  }
+  bone.quaternion.premultiply(local);
+}
+
 function driveVRM(t) {
+  if (window.__freeze) return;
   if (!vrmModel && !modelRoot) return;
   const st = (typeof bh !== 'undefined' && bh.state === 'walk') ? 'walk' : (bh.anchor === 'sleep' ? 'sleep' : (bh.anchor === 'tv' || bh.anchor === 'sofa' ? 'sit' : (bh.anchor === 'bed' ? 'lie' : (bh.anchor === 'catbed' || bh.anchor === 'catroom' ? 'pet' : (bh.anchor === 'rug' ? 'sit' : 'idle')))));
   // 全清零
@@ -1801,20 +1846,18 @@ function driveVRM(t) {
     mdl.position.y = (vrmModel ? vrmGroundY : 0) + seat;
   }
 
-  // 基线：双臂自然下垂（VRM 是 T-pose 绑定）
-  setBone('leftUpperArm', 0, 0, -1.48);
-  setBone('rightUpperArm', 0, 0, 1.48);
-  setBone('leftLowerArm', 0, 0, -0.12);
-  setBone('rightLowerArm', 0, 0, 0.12);
+  // 基线：双臂垂直向下（用几何朝向，不依赖欧拉轴）
+  aimBone('armL', 'foreL', new THREE.Vector3(0.06, -1, 0.02));
+  aimBone('armR', 'foreR', new THREE.Vector3(-0.06, -1, 0.02));
 
   if (st === 'walk') {
     const sw = Math.sin(t * 7.5);
+    aimBone('armL', 'foreL', new THREE.Vector3(0.06, -1, 0.40 * sw));
+    aimBone('armR', 'foreR', new THREE.Vector3(-0.06, -1, -0.40 * sw));
     setBone('leftUpperLeg', 0.55 * sw, 0, 0);
     setBone('rightUpperLeg', -0.55 * sw, 0, 0);
     setBone('leftLowerLeg', Math.max(0, -sw) * 0.7, 0, 0);
     setBone('rightLowerLeg', Math.max(0, sw) * 0.7, 0, 0);
-    setBone('leftUpperArm', -0.45 * sw, 0, -1.42);
-    setBone('rightUpperArm', 0.45 * sw, 0, 1.42);
     setBone('spine', 0.03, 0, 0);
   } else if (st === 'sit') {
     /* 高度统一在末尾处理 */
@@ -1822,15 +1865,9 @@ function driveVRM(t) {
     setBone('rightUpperLeg', -1.45, 0, -0.04);
     setBone('leftLowerLeg', 1.35, 0, 0);
     setBone('rightLowerLeg', 1.35, 0, 0);
-    setBone('leftUpperArm', 0.08, 0, -1.40);
-    setBone('rightUpperArm', 0.08, 0, 1.40);
-    setBone('leftLowerArm', -0.35, 0, 0);
-    setBone('rightLowerArm', -0.35, 0, 0);
     setBone('spine', 0.06, 0, 0);
   } else if (st === 'lie' || st === 'sleep') {
     mdl.rotation.x = -Math.PI / 2;
-    setBone('leftUpperArm', 0.1, 0, -1.35);
-    setBone('rightUpperArm', 0.1, 0, 1.35);
     setBone('head', st === 'sleep' ? 0.1 : 0.22, 0, 0);
     setBone('leftUpperLeg', 0.05, 0, 0.03);
     setBone('rightUpperLeg', 0.05, 0, -0.03);
@@ -1840,14 +1877,10 @@ function driveVRM(t) {
     setBone('leftLowerLeg', 1.6, 0, 0);
     setBone('rightLowerLeg', 1.6, 0, 0);
     setBone('spine', 0.3, 0, 0);
-    setBone('leftUpperArm', -0.7, 0, -1.30);
-    setBone('rightUpperArm', -0.5, 0, 1.30);
     setBone('head', 0.2, 0, 0);
   } else {
     setBone('spine', Math.sin(t * 1.4) * 0.02, 0, 0);
     setBone('head', Math.sin(t * 0.9) * 0.03, Math.sin(t * 0.6) * 0.05, 0);
-    setBone('leftUpperArm', 0.02, 0, -1.48);
-    setBone('rightUpperArm', 0.02, 0, 1.48);
   }
   // 统一高度：站在地面 / 坐在座面 / 躺床上
   const seatY = (SEAT_Y[bh.anchor] !== undefined ? SEAT_Y[bh.anchor] : 0.02);
