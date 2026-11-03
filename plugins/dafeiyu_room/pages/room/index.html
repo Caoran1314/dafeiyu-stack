@@ -1396,7 +1396,15 @@ function loadRoomShell() {
       });
       scene.add(g);
       shell.visible = false;
-      console.log('[room] 已加载 Blender 房型 room.glb');
+      // Blender 模型自带家具：隐藏代码生成的所有家具，只留灯光/猫/人物
+      const keep = new Set([girl, contact]);
+      (typeof cats !== 'undefined' ? cats : []).forEach(c => keep.add(c.c));
+      let hidden = 0;
+      room.children.forEach(o => {
+        if (o.isLight || keep.has(o)) return;
+        o.visible = false; hidden++;
+      });
+      console.log('[room] 已加载 Blender 房型，隐藏代码家具', hidden, '件');
       resolve(true);
     }, undefined, err => {
       console.log('[room] 没有 room.glb，用代码生成的墙地', err && err.message);
@@ -2174,7 +2182,7 @@ function tick(now) {
 
 window.addEventListener('resize', resize);
 resize();
-loadVRM().then(ok1 => {
+loadRoomShell().then(() => loadVRM()).then(ok1 => {
   if (ok1) { girl.visible = false; contact.visible = false; return true; }
   return loadCharacter().then(ok2 => {
     if (ok2) { girl.visible = false; contact.visible = false; }
