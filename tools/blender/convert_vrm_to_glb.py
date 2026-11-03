@@ -18,6 +18,7 @@ argv = sys.argv
 args = argv[argv.index("--") + 1:] if "--" in argv else []
 vrm = args[args.index("--vrm") + 1] if "--vrm" in args else None
 out = args[args.index("--out") + 1] if "--out" in args else "character.glb"
+keep_mtoon = "--keep-mtoon" in args
 if not vrm or not os.path.exists(vrm):
     raise SystemExit("缺少 --vrm 输入文件")
 
@@ -44,6 +45,21 @@ for o in list(bpy.data.objects):
         bpy.data.objects.remove(o, do_unlink=True)
 print("删除说明牌：", removed or "无")
 
+# 删掉可选配件与描边壳（草帽/猫耳/狐狸尾/Outline），这些在网页里只会变成金属块
+# ve_emote/atlas/facebaked 是“脸部+版权牌”的叠加面片，必须删
+drop_keys = ("strawhat", "cat_ear", "catear", "foxtail", "fox_tail", "outline",
+             "ve_emote", "emoteatlas", "facebaked")
+dropped = []
+for o in list(bpy.data.objects):
+    if o.type != "MESH":
+        continue
+    names = [s.material.name.lower() for s in o.material_slots if s.material]
+    objname = o.name.lower()
+    if any(any(k in n for k in drop_keys) for n in names) or any(k in objname for k in drop_keys):
+        dropped.append(o.name)
+        bpy.data.objects.remove(o, do_unlink=True)
+print("清理配件：", len(dropped), "个", dropped[:6])
+
 
 def find_image(mat):
     """在材质节点里找第一张图片贴图。"""
@@ -56,47 +72,60 @@ def find_image(mat):
 
 
 # ---------------------------------------------------------------- 2) 材质转换
-converted = 0
-cache = {}
+def convert_material(m):
+    """MToon/自定义 → Principled BSDF，保留贴图与透明度。"""
+    img = find_image(m)
+    new = bpy.data.materials.new(name=m.name + "_pbr")
+    new.use_nodes = True
+    nt = new.node_tree
+    bsdf = next((n for n in nt.nodes if n.type == "BSDF_PRINCIPLED"), None)
+    if bsdf is None:
+        bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
+        out_node = next((n for n in nt.nodes if n.type == "OUTPUT_MATERIAL"), None)
+        if out_node:
+            nt.links.new(bsdf.outputs["BSDF"], out_node.inputs["Surface"])
+    bsdf.inputs["Roughness"].default_value = 0.62
+    bsdf.inputs["Metallic"].default_value = 0.0
+    if img:
+        tex = nt.nodes.new("ShaderNodeTexImage")
+        tex.image = img
+        tex.location = (-420, 260)
+        nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
+        nt.links.new(tex.outputs["Alpha"], bsdf.inputs["Alpha"])
+        new.blend_method = "CLIP" if m.blend_method in ("HASHED", "CLIP") else (
+            "BLEND" if m.blend_method == "BLEND" else "OPAQUE")
+    else:
+        # 没有贴图就用 MToon 的基础色，实在拿不到就白色
+        col = None
+        for n in (m.node_tree.nodes if m.use_nodes else []):
+            if n.type == "RGB" and n.outputs:
+                col = n.outputs[0].default_value
+                break
+        if col:
+            bsdf.inputs["Base Color"].default_value = col
+        new.blend_method = "OPAQUE"
+    new.use_backface_culling = False
+    return new
+
+
+mapping = {}
+for m in ([] if keep_mtoon else list(bpy.data.materials)):
+    if m.name.endswith("_pbr"):
+        continue
+    try:
+        mapping[m.name] = convert_material(m)
+    except Exception as exc:
+        print("材质转换失败:", m.name, exc)
+
+replaced = 0
 for o in bpy.data.objects:
     if o.type != "MESH":
         continue
     for slot in o.material_slots:
-        m = slot.material
-        if not m:
-            continue
-        if m.name in cache:
-            slot.material = cache[m.name]
-            continue
-        img = find_image(m)
-        new = bpy.data.materials.new(name=m.name + "_pbr")
-        new.use_nodes = True
-        nt = new.node_tree
-        bsdf = next((n for n in nt.nodes if n.type == "BSDF_PRINCIPLED"), None)
-        if bsdf is None:
-            bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
-            out_node = next((n for n in nt.nodes if n.type == "OUTPUT_MATERIAL"), None)
-            if out_node:
-                nt.links.new(bsdf.outputs["BSDF"], out_node.inputs["Surface"])
-        bsdf.inputs["Roughness"].default_value = 0.62
-        bsdf.inputs["Metallic"].default_value = 0.0
-        if img:
-            tex = nt.nodes.new("ShaderNodeTexImage")
-            tex.image = img
-            tex.location = (-420, 260)
-            nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
-            if img.depth == 32 or "alpha" in img.name.lower() or m.blend_method in ("HASHED", "BLEND"):
-                nt.links.new(tex.outputs["Alpha"], bsdf.inputs["Alpha"])
-        # 透明度设置（脸部贴图、头发边缘）
-        if m.blend_method in ("HASHED", "BLEND"):
-            new.blend_method = "BLEND" if m.blend_method == "BLEND" else "HASHED"
-            new.use_backface_culling = False
-        else:
-            new.blend_method = "OPAQUE"
-        cache[m.name] = new
-        slot.material = new
-        converted += 1
-print("材质转换：", converted, "个")
+        if slot.material and slot.material.name in mapping:
+            slot.material = mapping[slot.material.name]
+            replaced += 1
+print("材质转换：", len(mapping), "个，替换 slot", replaced, "次（keep_mtoon =", keep_mtoon, "）")
 
 # ---------------------------------------------------------------- 3) 方向与落地
 arm = next((o for o in bpy.data.objects if o.type == "ARMATURE"), None)

@@ -56,7 +56,13 @@ scene.view_settings.exposure = 0.0
 if scene.world is None:
     scene.world = bpy.data.worlds.new("W")
 scene.world.use_nodes = True
-bg = scene.world.node_tree.nodes.get("Background")
+nt = scene.world.node_tree
+bg = nt.nodes.get("Background") or nt.nodes.new("ShaderNodeBackground")
+out = nt.nodes.get("World Output") or nt.nodes.new("ShaderNodeOutputWorld")
+try:
+    nt.links.new(bg.outputs[0], out.inputs[0])
+except Exception:
+    pass
 bg.inputs[0].default_value = (0.72, 0.78, 0.84, 1)
 bg.inputs[1].default_value = 0.45
 

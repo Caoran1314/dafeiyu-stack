@@ -140,3 +140,29 @@ blender --background --python tools/blender/convert_vrm_to_glb.py   -- --vrm mod
 - 部分配件材质（帽子/尾巴）仍偏金属——转换要覆盖所有 slot，含未使用的材质
 - glb 没有动画剪辑，网页需要按骨骼名驱动姿势（当前只对 VRM 生效）
 - 镜头距离按模型尺寸再校准
+
+
+## 最终方案（2026-11-03 验证）
+
+**直接用 `.vrm`，不做 glb 转换。**
+
+| 原因 | 说明 |
+|---|---|
+| glb 导出会丢 MToon | Blender 导出后脸部/头发材质全坏 |
+| three-vrm 原生支持 MToon | 加载 .vrm 才是正确路径 |
+
+网页里做的三件事：
+
+1. `three-vrm` 加载 `model/character.vrm`
+2. 隐藏 `VEE_EmoteAtlas`（脸部叠加面片 + 版权牌）与 `MToon Outline` 描边壳
+3. 把 `ShaderMaterial` 重建为带贴图的卡通材质（模型是 Warudo 转的，材质不是标准 MToon）
+4. 用**归一化骨骼**摆姿势（`humanoid.getNormalizedBoneNode`），再 `humanoid.update()`
+
+### 踩过的关键坑
+
+| 现象 | 原因 | 解法 |
+|---|---|---|
+| 脸是黑红块 | `VEE_EmoteAtlas` 叠加面片 | 隐藏该网格 |
+| 头顶金属碗 | 草帽/配件 + 描边壳 | 按名字+材质名过滤 |
+| 悬空、只剩头 | 坐姿高度没生效（分支里覆盖了 y） | 高度统一在函数末尾设置 |
+| 手臂一直 T-pose | 改的是原始骨骼，`humanoid.update()` 会覆盖 | 改归一化骨骼 |
