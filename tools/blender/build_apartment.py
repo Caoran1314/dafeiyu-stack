@@ -60,6 +60,19 @@ M_RUG = mat("Rug", (0.88, 0.92, 0.95), 0.95)
 M_GLASS = mat("Glass", (0.35, 0.62, 0.80), 0.1, 0.0, 0.35)
 M_CITY = mat("City", (0.10, 0.24, 0.38), 0.8)
 
+# 分房间配色
+M_WALL_WARM = mat("WallWarm", (0.94, 0.90, 0.84), 0.88)
+M_WALL_SAGE = mat("WallSage", (0.80, 0.85, 0.80), 0.88)
+M_WALL_SLATE = mat("WallSlate", (0.26, 0.30, 0.36), 0.85)
+M_WALL_TERRA = mat("WallTerra", (0.82, 0.70, 0.60), 0.88)
+M_FLOOR_WOOD = mat("FloorWood", (0.52, 0.40, 0.29), 0.45)
+M_FLOOR_TILE = mat("FloorTile", (0.88, 0.88, 0.89), 0.35)
+M_FLOOR_CAT = mat("FloorCat", (0.78, 0.80, 0.76), 0.5)
+M_GOLD = mat("Gold", (0.80, 0.66, 0.36), 0.3, 0.85)
+M_EMIT = mat("Emissive", (1.0, 0.95, 0.85), 0.4)
+M_SAGE_FAB = mat("SageFabric", (0.62, 0.70, 0.62), 0.9)
+M_TERRA_FAB = mat("TerraFabric", (0.72, 0.48, 0.38), 0.9)
+
 
 # ---------------------------------------------------------------- 工具
 def box(name, sx, sy, sz, x, y, z, rz=0.0, m=None, bevel=0.015):
@@ -106,7 +119,12 @@ def J(x, z):
 
 
 # ---------------------------------------------------------------- 地板 / 天花
-box("Floor", R * 2, R * 2, 0.1, 0, 0, -0.05, m=M_FLOOR, bevel=0)
+# 分房间地板（不同材质）
+box("FloorLiving", 7.0, 7.0, 0.1, 2.5, -2.5, -0.05, m=M_FLOOR_TILE, bevel=0)   # 客厅
+box("FloorBed", 5.0, 5.0, 0.1, -3.5, -3.5, -0.05, m=M_FLOOR_WOOD, bevel=0)      # 主卧
+box("FloorGame", 5.0, 4.0, 0.1, -3.5, 3.0, -0.05, m=M_FLOOR_WOOD, bevel=0)      # 电竞房
+box("FloorCat", 5.0, 5.0, 0.1, 3.5, 3.5, -0.05, m=M_FLOOR_CAT, bevel=0)         # 猫房
+box("FloorHall", 2.0, 5.0, 0.1, 0.0, 3.5, -0.05, m=M_FLOOR_WOOD, bevel=0)       # 玄关
 # 天花板不导出（俯视看不到室内）
 
 # 外墙
@@ -115,7 +133,7 @@ box("WallN", R * 2, WALL, H, 0, R, H / 2, m=M_WALL, bevel=0)      # z=+6 → y=-
 bpy.data.objects.remove(bpy.data.objects["WallN"], do_unlink=True)
 
 
-def wall_x(name, x, z0, z1, door=None, door_w=1.0):
+def wall_x(name, x, z0, z1, door=None, door_w=1.0, m=M_WALL):
     """沿 z 方向的墙（Blender y 方向），带门洞和过梁"""
     y0, y1 = -z1, -z0
     segs = [(y0, y1)] if door is None else [
@@ -124,13 +142,13 @@ def wall_x(name, x, z0, z1, door=None, door_w=1.0):
     for a, b in segs:
         if b - a < 0.05:
             continue
-        box(f"{name}_{i}", WALL, b - a, H, x, (a + b) / 2, H / 2, m=M_WALL, bevel=0)
+        box(f"{name}_{i}", WALL, b - a, H, x, (a + b) / 2, H / 2, m=m, bevel=0)
         i += 1
     if door is not None:
         box(f"{name}_lintel", WALL, door_w, H - 2.1, x, -door, (H + 2.1) / 2, m=M_WALL, bevel=0)
 
 
-def wall_z(name, z, x0, x1, door=None, door_w=1.0):
+def wall_z(name, z, x0, x1, door=None, door_w=1.0, m=M_WALL):
     """沿 x 方向的墙"""
     y = -z
     segs = [(x0, x1)] if door is None else [
@@ -139,7 +157,7 @@ def wall_z(name, z, x0, x1, door=None, door_w=1.0):
     for a, b in segs:
         if b - a < 0.05:
             continue
-        box(f"{name}_{i}", b - a, WALL, H, (a + b) / 2, y, H / 2, m=M_WALL, bevel=0)
+        box(f"{name}_{i}", b - a, WALL, H, (a + b) / 2, y, H / 2, m=m, bevel=0)
         i += 1
     if door is not None:
         box(f"{name}_lintel", door_w, WALL, H - 2.1, door, y, (H + 2.1) / 2, m=M_WALL, bevel=0)
@@ -152,10 +170,10 @@ wall_x("OuterW", -R, -R, R)
 wall_x("OuterE", R, -R, R)
 
 # 隔断（与网页一致）
-wall_z("BedLiving", 1, -R, -1, door=-3.5)      # 主卧 ↔ 客厅
-wall_x("LeftHall", -1, -5, 1, door=-3)          # 电竞房 ↔ 玄关
-wall_x("CatHall", 1, -R, -1, door=-3.5)         # 猫房 ↔ 玄关
-wall_z("CatLiving", -1, 1, R, door=3.5)         # 猫房 ↔ 客厅
+wall_z("BedLiving", 1, -R, -1, door=-3.5, m=M_WALL_WARM)      # 主卧 ↔ 客厅
+wall_x("LeftHall", -1, -5, 1, door=-3, m=M_WALL_SAGE)          # 电竞房 ↔ 玄关
+wall_x("CatHall", 1, -R, -1, door=-3.5, m=M_WALL_SAGE)         # 猫房 ↔ 玄关
+wall_z("CatLiving", -1, 1, R, door=3.5, m=M_WALL_WARM)         # 猫房 ↔ 客厅
 
 # 踢脚线
 for (x, z, w, d) in [(0, -R + 0.07, R * 2, 0.02), (0, R - 0.07, R * 2, 0.02),
@@ -338,6 +356,119 @@ bpy.ops.object.light_add(type="AREA", location=(-3.5, -3.5, 2.6))
 k2 = bpy.context.active_object
 k2.data.energy = 200
 k2.data.size = 5
+
+
+# ---------------------------------------------------------------- 精致化细节
+# 门套（四处门洞）
+def door_casing(x, z, along="z", w=1.0):
+    if along == "z":
+        for dz in (-w / 2 - 0.05, w / 2 + 0.05):
+            box("Casing", WALL + 0.06, 0.1, 2.15, x, -z + dz, 1.06, m=M_WOOD_L, bevel=0)
+        box("CasingTop", WALL + 0.06, w + 0.2, 0.12, x, -z, 2.16, m=M_WOOD_L, bevel=0)
+    else:
+        for dx in (-w / 2 - 0.05, w / 2 + 0.05):
+            box("Casing", 0.1, WALL + 0.06, 2.15, x + dx, -z, 1.06, m=M_WOOD_L, bevel=0)
+        box("CasingTop", w + 0.2, WALL + 0.06, 0.12, x, -z, 2.16, m=M_WOOD_L, bevel=0)
+
+
+door_casing(-3.5, 1, "z")
+door_casing(-1, -3, "z")
+door_casing(1, -3.5, "z")
+door_casing(3.5, -1, "z")
+
+# 背景墙
+box("FeatureTvWall", 3.6, 0.06, 2.2, 2.4, -5.92, 1.12, m=M_WALL_TERRA, bevel=0)
+box("FeatureBedWall", 3.2, 0.06, 2.2, -4.0, -5.92, 1.12, m=M_WALL_WARM, bevel=0)
+box("FeatureGameWall", 3.4, 0.06, 2.2, -3.5, 5.92, 1.12, m=M_WALL_SLATE, bevel=0)
+
+# 窗帘（主卧）
+for dz in (-0.95, 0.95):
+    box("Curtain", 0.08, 0.55, 2.3, -5.75, -(4.6 + dz), 1.15, m=M_SAGE_FAB, bevel=0)
+box("CurtainRod", 0.05, 2.4, 0.05, -5.75, -4.6, 2.35, m=M_METAL, bevel=0)
+
+# 吊灯（四个房间）
+def pendant(name, x, z, y=2.3):
+    cyl(f"{name}_rod", 0.012, 0.5, x, -z, y + 0.25, m=M_METAL, seg=8)
+    cyl(f"{name}_shade", 0.26, 0.18, x, -z, y, m=M_GOLD, seg=20)
+    sph(f"{name}_bulb", 0.09, x, -z, y - 0.08, m=M_EMIT)
+
+
+pendant("PendantLiving", 2.4, 2.4)
+pendant("PendantBed", -3.6, 3.4)
+pendant("PendantGame", -3.5, -3.0)
+pendant("PendantCat", 3.5, -3.5)
+
+# 客厅装饰：抱枕、书、绿植小盆栽
+box("PillowAccent", 0.36, 0.14, 0.3, 2.0, -3.9, 0.56, rz=0.3, m=M_TERRA_FAB)
+box("Book1", 0.26, 0.18, 0.04, 2.3, -4.3, 0.46, rz=0.2, m=M_TERRA_FAB, bevel=0)
+box("Book2", 0.24, 0.17, 0.035, 2.34, -4.29, 0.5, rz=0.35, m=M_LINEN, bevel=0)
+cyl("SmallPot", 0.09, 0.16, 2.85, -4.3, 0.5, m=M_WOOD_L)
+sph("SmallPlant", 0.11, 2.85, -4.3, 0.63, m=M_GREEN)
+
+# 主卧装饰：床尾毯、闹钟、小夜灯、拖鞋
+box("BedThrow", 1.9, 0.55, 0.05, -4.0, -3.95, 0.63, m=M_TERRA_FAB, bevel=0)
+box("Clock", 0.14, 0.1, 0.12, -2.45, -4.75, 0.6, m=M_DARK, bevel=0.01)
+cyl("NightLampBase", 0.07, 0.06, -5.55, -4.75, 0.57, m=M_GOLD)
+sph("NightLampBulb", 0.07, -5.55, -4.75, 0.64, m=M_EMIT)
+box("Slippers", 0.34, 0.16, 0.05, -4.9, -3.7, 0.03, m=M_FABRIC, bevel=0.01)
+
+# 电竞房装饰：桌垫、RGB 灯带、耳机
+box("DeskMat", 0.8, 0.34, 0.01, -3.5, -4.62, 0.795, m=M_WALL_SLATE, bevel=0)
+box("RgbStrip", 1.9, 0.03, 0.02, -3.5, -4.92, 0.72, m=M_EMIT, bevel=0)
+box("Headset", 0.14, 0.1, 0.14, -3.9, -4.55, 0.88, m=M_DARK, bevel=0.01)
+
+# 猫房装饰：墙面猫跳台、玩具球
+for i, (cx, cz, ch) in enumerate([(1.2, -4.4, 1.2), (2.0, -4.4, 1.6), (2.8, -4.4, 1.35)]):
+    box(f"CatShelf{i}", 0.5, 0.26, 0.06, cx, -cz, ch, m=M_WOOD_L, bevel=0)
+sph("CatToy", 0.07, 3.0, -2.9, 0.08, m=M_TERRA_FAB)
+box("CatCushion", 0.6, 0.4, 0.08, 4.6, -2.6, 0.18, m=M_SAGE_FAB, bevel=0.02)
+
+# 玄关装饰：挂画、换鞋凳、地垫
+box("HallArt", 0.7, 0.04, 0.9, 0.0, 5.94, 1.6, m=M_WALL_TERRA, bevel=0)
+box("ShoeBench", 0.9, 0.32, 0.42, -0.6, 5.5, 0.21, m=M_WOOD, bevel=0.01)
+box("Doormat", 1.0, 0.6, 0.02, 0.0, 5.2, 0.01, m=M_TERRA_FAB, bevel=0)
+
+
+# ---------------------------------------------------------------- 精致化细节 2
+# 沙发腿 + 坐垫分色
+for dx in (-0.82, 0.82):
+    for dy in (-0.38, 0.38):
+        box("SofaLeg", 0.07, 0.07, 0.14, 2.4 + dx, -3.6 + dy, 0.07, m=M_DARK, bevel=0.005)
+box("SofaSeatL", 0.82, 0.78, 0.14, 1.95, -3.58, 0.44, m=M_SAGE_FAB, bevel=0.02)
+box("SofaSeatR", 0.82, 0.78, 0.14, 2.85, -3.58, 0.44, m=M_SAGE_FAB, bevel=0.02)
+box("SofaThrow", 0.5, 0.5, 0.06, 2.9, -3.5, 0.53, rz=0.2, m=M_TERRA_FAB, bevel=0.01)
+
+# 电视音响 + 机顶盒
+box("Soundbar", 1.2, 0.1, 0.08, 2.4, -5.62, 0.5, m=M_DARK, bevel=0.01)
+box("TvBox", 0.3, 0.18, 0.06, 2.95, -5.6, 0.47, m=M_DARK, bevel=0.005)
+
+# 床头软包 + 被子分色
+box("BedHeadSoft", 1.9, 0.08, 0.7, -4.0, 4.62, 0.75, m=M_WALL_WARM, bevel=0.03)
+box("BedDuvet", 1.9, 1.1, 0.12, -4.0, -4.15, 0.63, m=M_SAGE_FAB, bevel=0.03)
+box("BedDuvetFold", 1.9, 0.3, 0.14, -4.0, -4.55, 0.66, m=M_LINEN, bevel=0.02)
+
+# 墙面挂画（客厅、主卧、电竞房）
+def art(name, x, y, z, w=0.7, h=0.5, rot=0, m=M_TERRA_FAB):
+    box(name, w, 0.04, h, x, y, z, rz=rot, m=M_WOOD_L, bevel=0.01)
+    box(name + "_canvas", w * 0.86, 0.02, h * 0.82, x, y + 0.03, z, rz=rot, m=m, bevel=0)
+
+
+art("ArtLiving", 4.6, -5.9, 1.6, 0.8, 0.55, 0, M_WALL_TERRA)
+art("ArtLiving2", 0.9, -5.9, 1.7, 0.55, 0.45, 0, M_SAGE_FAB)
+art("ArtBed", -2.6, -1.08, 1.55, 0.6, 0.45, math.pi / 2, M_GOLD)
+art("ArtGame", -5.9, 3.2, 1.7, 0.6, 0.5, math.pi / 2, M_WALL_TERRA)
+
+# 猫房墙面跳台垫 + 猫抓柱
+box("CatScratchPost", 0.16, 0.16, 0.9, 4.2, 4.6, 0.45, m=M_CAT, bevel=0.02)
+box("CatScratchBase", 0.5, 0.5, 0.06, 4.2, 4.6, 0.03, m=M_WOOD_L, bevel=0.01)
+
+# 餐厅吊灯
+cyl("DiningPendant", 0.22, 0.16, 4.7, 1.3, 2.0, m=M_GOLD, seg=18)
+cyl("DiningPendantRod", 0.01, 0.6, 4.7, 1.3, 2.35, m=M_METAL, seg=8)
+sph("DiningBulb", 0.08, 4.7, 1.3, 1.9, m=M_EMIT)
+
+# 客厅地毯边缘压条（视觉分隔）
+box("RugTrim", 2.9, 0.04, 0.02, 2.4, -5.85, 0.02, m=M_WOOD, bevel=0)
 
 bpy.ops.export_scene.gltf(
     filepath=out,
