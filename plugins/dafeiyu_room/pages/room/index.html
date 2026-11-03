@@ -1552,6 +1552,14 @@ window.__cam = () => ({ cam: camera.position.toArray().map(v => +v.toFixed(2)),
   goal: camGoal ? camGoal.pos.map(v => +v.toFixed(2)) : null,
   anchor: bh.anchor, auto: camAuto, free: freeCam });
 
+window.__setCam = (px, py, pz, tx, ty, tz) => {
+  camAuto = false; freeCam = true;
+  camera.position.set(px, py, pz);
+  controls.target.set(tx, ty, tz);
+  controls.update();
+  return true;
+};
+
 function applyAnchor(name, instant) {
   if (name === 'away') {
     // 上班：她不在房间
@@ -1782,7 +1790,7 @@ function driveVRM(t) {
   if (vrmModel) mdl.position.y = vrmGroundY;
   // 每帧按锚点兜底定位（避免摆位调用被漏掉）
   const an = (typeof ANCHOR !== 'undefined' && bh.anchor) ? ANCHOR[bh.anchor] : null;
-  const SEAT_Y = { tv: 0.30, sofa: 0.30, gaming: 0.26, desk: 0.26,
+  const SEAT_Y = { tv: 0.20, sofa: 0.20, gaming: 0.18, desk: 0.18,
                    bed: 0.52, sleep: 0.55, rug: 0.02, pet: 0.02,
                    catbed: 0.02, catroom: 0.02, dresser: 0.02, window: 0.02, center: 0.02 };
   if (an && bh.state !== 'walk') {
@@ -1794,8 +1802,8 @@ function driveVRM(t) {
   }
 
   // 基线：双臂自然下垂（VRM 是 T-pose 绑定）
-  setBone('leftUpperArm', 0, 0, -1.15);
-  setBone('rightUpperArm', 0, 0, 1.15);
+  setBone('leftUpperArm', 0, 0, -1.48);
+  setBone('rightUpperArm', 0, 0, 1.48);
   setBone('leftLowerArm', 0, 0, -0.12);
   setBone('rightLowerArm', 0, 0, 0.12);
 
@@ -1805,8 +1813,8 @@ function driveVRM(t) {
     setBone('rightUpperLeg', -0.55 * sw, 0, 0);
     setBone('leftLowerLeg', Math.max(0, -sw) * 0.7, 0, 0);
     setBone('rightLowerLeg', Math.max(0, sw) * 0.7, 0, 0);
-    setBone('leftUpperArm', -0.45 * sw, 0, -1.1);
-    setBone('rightUpperArm', 0.45 * sw, 0, 1.1);
+    setBone('leftUpperArm', -0.45 * sw, 0, -1.42);
+    setBone('rightUpperArm', 0.45 * sw, 0, 1.42);
     setBone('spine', 0.03, 0, 0);
   } else if (st === 'sit') {
     /* 高度统一在末尾处理 */
@@ -1814,15 +1822,15 @@ function driveVRM(t) {
     setBone('rightUpperLeg', -1.45, 0, -0.04);
     setBone('leftLowerLeg', 1.35, 0, 0);
     setBone('rightLowerLeg', 1.35, 0, 0);
-    setBone('leftUpperArm', 0.10, 0, -1.05);
-    setBone('rightUpperArm', 0.10, 0, 1.05);
+    setBone('leftUpperArm', 0.08, 0, -1.40);
+    setBone('rightUpperArm', 0.08, 0, 1.40);
     setBone('leftLowerArm', -0.35, 0, 0);
     setBone('rightLowerArm', -0.35, 0, 0);
     setBone('spine', 0.06, 0, 0);
   } else if (st === 'lie' || st === 'sleep') {
     mdl.rotation.x = -Math.PI / 2;
-    setBone('leftUpperArm', 0.1, 0, -0.55);
-    setBone('rightUpperArm', 0.1, 0, 0.55);
+    setBone('leftUpperArm', 0.1, 0, -1.35);
+    setBone('rightUpperArm', 0.1, 0, 1.35);
     setBone('head', st === 'sleep' ? 0.1 : 0.22, 0, 0);
     setBone('leftUpperLeg', 0.05, 0, 0.03);
     setBone('rightUpperLeg', 0.05, 0, -0.03);
@@ -1832,14 +1840,14 @@ function driveVRM(t) {
     setBone('leftLowerLeg', 1.6, 0, 0);
     setBone('rightLowerLeg', 1.6, 0, 0);
     setBone('spine', 0.3, 0, 0);
-    setBone('leftUpperArm', -0.7, 0, -0.9);
-    setBone('rightUpperArm', -0.5, 0, 0.9);
+    setBone('leftUpperArm', -0.7, 0, -1.30);
+    setBone('rightUpperArm', -0.5, 0, 1.30);
     setBone('head', 0.2, 0, 0);
   } else {
     setBone('spine', Math.sin(t * 1.4) * 0.02, 0, 0);
     setBone('head', Math.sin(t * 0.9) * 0.03, Math.sin(t * 0.6) * 0.05, 0);
-    setBone('leftUpperArm', 0.02, 0, -1.12);
-    setBone('rightUpperArm', 0.02, 0, 1.12);
+    setBone('leftUpperArm', 0.02, 0, -1.48);
+    setBone('rightUpperArm', 0.02, 0, 1.48);
   }
   // 统一高度：站在地面 / 坐在座面 / 躺床上
   const seatY = (SEAT_Y[bh.anchor] !== undefined ? SEAT_Y[bh.anchor] : 0.02);
@@ -1867,8 +1875,13 @@ function tick(now) {
   // 有模型时：相机跟着模型走（固定斜前方），保证始终看得到她
   const followTarget = (vrmModel || modelRoot);
   if (followTarget && camAuto && !freeCam && !TOPVIEW) {
-    const want = followTarget.position.clone().add(new THREE.Vector3(2.45, 1.55, 2.45));
-    want.x = Math.max(-6.6, Math.min(6.6, want.x));
+    // 侧向机位：垂直于锚点朝向，稳定看到侧脸
+    const anRef = (typeof ANCHOR !== 'undefined' && bh.anchor) ? ANCHOR[bh.anchor] : null;
+    const ang = anRef ? (anRef.rotY || 0) : 0;
+    const right = new THREE.Vector3(Math.cos(ang), 0, -Math.sin(ang));
+    const want = followTarget.position.clone()
+      .add(right.multiplyScalar(2.25))
+      .add(new THREE.Vector3(0, 1.40, 0));
     want.z = Math.max(-2.3, Math.min(2.86, want.z));
     camera.position.lerp(want, 0.08);
     controls.target.lerp(followTarget.position.clone().add(new THREE.Vector3(0, 0.85, 0)), 0.12);
