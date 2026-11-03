@@ -272,6 +272,9 @@ function wallX(x, z0, z1, doorAt, doorW) {      // 沿 z 方向的墙
     if (b - a < 0.05) return;
     shell.add(put(softBox(0.12, H, b - a, M.wall, .02), x, H / 2, (a + b) / 2));
   });
+  if (doorAt !== null) {
+    shell.add(put(softBox(0.12, H - 2.1, doorW, M.wall, .02), x, (H + 2.1) / 2, doorAt));
+  }
 }
 function wallZ(z, x0, x1, doorAt, doorW) {      // 沿 x 方向的墙
   const segs = [];
@@ -284,6 +287,9 @@ function wallZ(z, x0, x1, doorAt, doorW) {      // 沿 x 方向的墙
     if (b - a < 0.05) return;
     shell.add(put(softBox(b - a, H, 0.12, M.wall, .02), (a + b) / 2, H / 2, z));
   });
+  if (doorAt !== null) {
+    shell.add(put(softBox(doorW, H - 2.1, 0.12, M.wall, .02), doorAt, (H + 2.1) / 2, z));
+  }
 }
 
 // 主卧与客厅之间（z=1，x -6..-1），门在 x=-3.5
@@ -1323,6 +1329,24 @@ const tvUnit = new THREE.Group();
 tvUnit.position.set(2.40, 0, 5.68);
 tvUnit.rotation.y = Math.PI;
 room.add(tvUnit);
+
+/* 开放厨房（客厅东墙） */
+const kCounter = new THREE.Group();
+kCounter.add(put(softBox(0.62, 0.88, 2.6, M.wood, .03), 0, 0.44, 0));
+kCounter.add(put(softBox(0.66, 0.05, 2.64, S(woodTex, 0xb9a288, .45), .01), 0, 0.9, 0));
+kCounter.add(put(softBox(0.56, 0.06, 0.5, M.metal, .02), 0, 0.86, -0.55));   // 水槽
+kCounter.add(put(softBox(0.6, 0.7, 2.6, M.cream, .04), 0, 1.55, 0));          // 吊柜
+kCounter.position.set(5.60, 0, 2.20);
+kCounter.rotation.y = -Math.PI / 2;
+room.add(kCounter);
+
+/* 玄关鞋柜 */
+const shoe = new THREE.Group();
+shoe.add(put(softBox(1.2, 0.9, 0.36, M.wood, .03), 0, 0.45, 0));
+shoe.add(put(softBox(1.2, 0.04, 0.38, S(woodTex, 0x9d8468, .4), .01), 0, 0.92, 0));
+shoe.position.set(0, 0, -5.62);
+room.add(shoe);
+
 
 /* 正方形房间的朝向微调 */
 shelf.rotation.y = -Math.PI / 2;
