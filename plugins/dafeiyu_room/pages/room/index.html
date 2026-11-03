@@ -1788,6 +1788,159 @@ setInterval(poll, 2500);
 poll();
 
 
+/* ============================ 动作库 ============================ */
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+function resetBones() {
+  ['hips','spine','chest','neck','head','armL','foreL','armR','foreR',
+   'legL','shinL','footL','legR','shinR','footR'].forEach(k => {
+    const b = skel[k];
+    if (b) b.rotation.set(0, 0, 0);
+  });
+}
+
+// 每个动作：t 是时间，p 是 0→1→0 的包络（用于过渡强度）
+const ACT = {
+  idle(t) {
+    aimBone('armL', 'foreL', V(0.10, -1, 0.02));
+    aimBone('armR', 'foreR', V(-0.10, -1, 0.02));
+    setBone('chest', Math.sin(t * 1.6) * 0.02, 0, 0);
+    setBone('head', Math.sin(t * 0.8) * 0.05, Math.sin(t * 0.5) * 0.12, 0);
+  },
+
+  stretch(t, p) {
+    aimBone('armL', 'foreL', V(0.45, 0.85, -0.15));
+    aimBone('armR', 'foreR', V(-0.45, 0.85, -0.15));
+    setBone('chest', -0.18 * p, 0, 0);
+    setBone('head', -0.22 * p, 0, 0);
+    setBone('spine', -0.08 * p, 0, 0);
+  },
+
+  yawn(t, p) {
+    aimBone('armR', 'foreR', V(0.18, -0.25, 0.95));
+    aimBone('armL', 'foreL', V(0.12, -1, 0.05));
+    setBone('head', -0.30 * p, 0, 0);
+    setBone('chest', -0.06 * p, 0, 0);
+  },
+
+  wave(t, p) {
+    aimBone('armR', 'foreR', V(0.55, 0.95, 0.15));
+    aimBone('armL', 'foreL', V(0.12, -1, 0.03));
+    setBone('head', 0.04, 0.15 * Math.sin(t * 6) * p, 0.08 * p);
+  },
+
+  phone(t, p) {
+    aimBone('armR', 'foreR', V(0.10, -0.15, 1.0));
+    aimBone('armL', 'foreL', V(0.16, -0.95, 0.25));
+    setBone('head', 0.28 * p, 0, 0);
+    setBone('chest', 0.10 * p, 0, 0);
+  },
+
+  hair(t, p) {
+    aimBone('armR', 'foreR', V(0.75, 0.55, 0.25));
+    aimBone('armL', 'foreL', V(0.12, -1, 0.03));
+    setBone('head', 0.02, 0.10 * Math.sin(t * 3) * p, 0.10 * p);
+  },
+
+  look(t, p) {
+    aimBone('armL', 'foreL', V(0.10, -1, 0.02));
+    aimBone('armR', 'foreR', V(-0.10, -1, 0.02));
+    setBone('head', 0.03, Math.sin(t * 1.1) * 0.35 * p, 0.05 * p);
+    setBone('chest', 0, Math.sin(t * 0.7) * 0.08 * p, 0);
+  },
+
+  read(t, p) {
+    aimBone('armL', 'foreL', V(0.10, -0.55, 1.0));
+    aimBone('armR', 'foreR', V(-0.10, -0.55, 1.0));
+    setBone('head', 0.22 * p, 0, 0);
+    setBone('chest', 0.08 * p, 0, 0);
+  },
+
+  typing(t, p) {
+    const j = Math.sin(t * 12) * 0.05;
+    aimBone('armL', 'foreL', V(0.16, -0.75, 0.9 + j));
+    aimBone('armR', 'foreR', V(-0.16, -0.75, 0.9 - j));
+    setBone('head', 0.16 * p, 0, 0);
+    setBone('chest', 0.06 * p, 0, 0);
+  },
+
+  dance(t, p) {
+    const s = Math.sin(t * 4.2);
+    aimBone('armL', 'foreL', V(0.9 * s, 0.75, 0.25));
+    aimBone('armR', 'foreR', V(-0.9 * s, 0.75, -0.25));
+    setBone('chest', 0.05, s * 0.14 * p, 0);
+    setBone('head', 0, s * 0.16 * p, 0);
+    setBone('legL', 0.12 * s, 0, 0.05);
+    setBone('legR', -0.12 * s, 0, -0.05);
+  },
+
+  yoga(t, p) {
+    aimBone('armL', 'foreL', V(0.35, 0.75, 0.55));
+    aimBone('armR', 'foreR', V(-0.35, 0.75, 0.55));
+    setBone('chest', 0.10 * p, 0, 0);
+    setBone('head', -0.12 * p, 0, 0);
+    setBone('legL', -1.15, 0, 0.08);
+    setBone('legR', -1.15, 0, -0.08);
+    setBone('shinL', 1.35, 0, 0);
+    setBone('shinR', 1.35, 0, 0);
+  },
+
+  pet(t, p) {
+    aimBone('armL', 'foreL', V(0.10, -0.55, 1.05));
+    aimBone('armR', 'foreR', V(-0.05, -0.50, 1.10));
+    setBone('chest', 0.30 * p, 0, 0);
+    setBone('head', 0.26 * p, 0, 0);
+    setBone('legL', -1.05, 0, 0.06);
+    setBone('legR', -1.05, 0, -0.06);
+    setBone('shinL', 1.55, 0, 0);
+    setBone('shinR', 1.55, 0, 0);
+  },
+
+  sit(t) {
+    aimBone('armL', 'foreL', V(0.12, -1, 0.30));
+    aimBone('armR', 'foreR', V(-0.12, -1, 0.30));
+    setBone('legL', -1.30, 0, 0.05);
+    setBone('legR', -1.30, 0, -0.05);
+    setBone('shinL', 1.25, 0, 0);
+    setBone('shinR', 1.25, 0, 0);
+    setBone('chest', 0.06, 0, 0);
+  },
+
+  lie(t) {
+    aimBone('armL', 'foreL', V(0.35, -0.35, 0.85));
+    aimBone('armR', 'foreR', V(-0.35, -0.35, 0.85));
+    setBone('head', 0.20, 0, 0);
+    setBone('legL', 0.10, 0, 0.04);
+    setBone('legR', 0.10, 0, -0.04);
+  },
+
+  sleep(t) {
+    aimBone('armL', 'foreL', V(0.30, -0.45, 0.85));
+    aimBone('armR', 'foreR', V(-0.30, -0.45, 0.85));
+    setBone('head', 0.10, 0, 0);
+    setBone('chest', Math.sin(t * 0.9) * 0.03, 0, 0);
+  },
+
+  walk(t) {
+    const sw = Math.sin(t * 7.0);
+    aimBone('armL', 'foreL', V(0.08, -1, 0.42 * sw));
+    aimBone('armR', 'foreR', V(-0.08, -1, -0.42 * sw));
+    setBone('legL', 0.55 * sw, 0, 0);
+    setBone('legR', -0.55 * sw, 0, 0);
+    setBone('shinL', Math.max(0, -sw) * 0.7, 0, 0);
+    setBone('shinR', Math.max(0, sw) * 0.7, 0, 0);
+    setBone('spine', 0.03, 0, 0);
+  }
+};
+
+// 空闲时随机冒出来的小动作
+const IDLE_ACTIONS = ['stretch', 'yawn', 'wave', 'phone', 'hair', 'dance', 'look'];
+let idleAction = null;
+let idleUntil = 0;
+let idleNext = 3.0;
+let forceAction = null;
+window.__do = (a) => { forceAction = a; return a; };
+
 /* ============================ VRM 程序化动作 ============================ */
 const SKEL_KEY = { hips:'hips', spine:'spine', chest:'chest', neck:'neck', head:'head',
   leftUpperArm:'armL', rightUpperArm:'armR', leftLowerArm:'foreL', rightLowerArm:'foreR',
@@ -1826,68 +1979,57 @@ function aimBone(boneKey, childKey, dir, blend) {
 function driveVRM(t) {
   if (window.__freeze) return;
   if (!vrmModel && !modelRoot) return;
-  const st = (typeof bh !== 'undefined' && bh.state === 'walk') ? 'walk' : (bh.anchor === 'sleep' ? 'sleep' : (bh.anchor === 'tv' || bh.anchor === 'sofa' ? 'sit' : (bh.anchor === 'bed' ? 'lie' : (bh.anchor === 'catbed' || bh.anchor === 'catroom' ? 'pet' : (bh.anchor === 'rug' ? 'sit' : 'idle')))));
-  // 全清零
-  ['hips', 'spine', 'chest', 'neck', 'head',
-   'armL', 'foreL', 'armR', 'foreR', 'legL', 'shinL', 'legR', 'shinR'].forEach(n => setBone(n, 0, 0, 0));
   const mdl = vrmModel || modelRoot;
-  mdl.rotation.x = 0;
-  if (vrmModel) mdl.position.y = vrmGroundY;
-  // 每帧按锚点兜底定位（避免摆位调用被漏掉）
+
+  // 当前锚点决定基础动作
+  const seatMap = {
+    bed: 'lie', sleep: 'sleep', tv: 'sit', sofa: 'sit', rug: 'yoga',
+    desk: 'typing', gaming: 'typing', catbed: 'pet', catroom: 'pet',
+    dresser: 'hair', window: 'look', away: null
+  };
+  let base = seatMap[bh.anchor] || 'idle';
+  if (bh.state === 'walk') base = 'walk';
+
+  // 空闲时随机触发小动作
+  let action = base, p = 1;
+  if (forceAction) { action = forceAction; p = 1; }
+  if (base !== 'walk') {
+    if (idleAction && t < idleUntil) {
+      action = idleAction;
+      const left = idleUntil - t;
+      p = Math.min(1, Math.min(t - (idleUntil - 3.0), left) * 2.5);
+    } else if (t > idleNext) {
+      idleAction = IDLE_ACTIONS[Math.floor(Math.random() * IDLE_ACTIONS.length)];
+      idleUntil = t + 2.5 + Math.random() * 2;
+      idleNext = idleUntil + 5 + Math.random() * 8;
+      action = idleAction;
+      p = 0.2;
+    }
+  }
+
+  resetBones();
+  if (vrmHumanoid) vrmHumanoid.update();
+  mdl.updateMatrixWorld(true);
+
+  const fn = ACT[action] || ACT.idle;
+  fn(t, p);
+  if (vrmHumanoid) vrmHumanoid.update();
+
+  // 朝向与位置
   const an = (typeof ANCHOR !== 'undefined' && bh.anchor) ? ANCHOR[bh.anchor] : null;
   const SEAT_Y = { tv: 0.20, sofa: 0.20, gaming: 0.18, desk: 0.18,
                    bed: 0.52, sleep: 0.55, rug: 0.02, pet: 0.02,
                    catbed: 0.02, catroom: 0.02, dresser: 0.02, window: 0.02, center: 0.02 };
+  const seat = (SEAT_Y[bh.anchor] !== undefined ? SEAT_Y[bh.anchor] : 0.02);
+  const baseY = vrmModel ? vrmGroundY : 0;
+
   if (an && bh.state !== 'walk') {
     mdl.position.x = an.pos[0];
     mdl.position.z = an.pos[2];
     mdl.rotation.y = (an.rotY || 0) + (vrmModel ? Math.PI : 0);
-    const seat = (SEAT_Y[bh.anchor] !== undefined ? SEAT_Y[bh.anchor] : 0.02);
-    mdl.position.y = (vrmModel ? vrmGroundY : 0) + seat;
+    mdl.rotation.x = (base === 'lie' || base === 'sleep') ? -Math.PI / 2 : 0;
+    mdl.position.y = baseY + ((base === 'lie' || base === 'sleep') ? 0.62 : seat);
   }
-
-  // 基线：双臂垂直向下（用几何朝向，不依赖欧拉轴）
-  aimBone('armL', 'foreL', new THREE.Vector3(0.06, -1, 0.02));
-  aimBone('armR', 'foreR', new THREE.Vector3(-0.06, -1, 0.02));
-
-  if (st === 'walk') {
-    const sw = Math.sin(t * 7.5);
-    aimBone('armL', 'foreL', new THREE.Vector3(0.06, -1, 0.40 * sw));
-    aimBone('armR', 'foreR', new THREE.Vector3(-0.06, -1, -0.40 * sw));
-    setBone('leftUpperLeg', 0.55 * sw, 0, 0);
-    setBone('rightUpperLeg', -0.55 * sw, 0, 0);
-    setBone('leftLowerLeg', Math.max(0, -sw) * 0.7, 0, 0);
-    setBone('rightLowerLeg', Math.max(0, sw) * 0.7, 0, 0);
-    setBone('spine', 0.03, 0, 0);
-  } else if (st === 'sit') {
-    /* 高度统一在末尾处理 */
-    setBone('leftUpperLeg', -1.45, 0, 0.04);
-    setBone('rightUpperLeg', -1.45, 0, -0.04);
-    setBone('leftLowerLeg', 1.35, 0, 0);
-    setBone('rightLowerLeg', 1.35, 0, 0);
-    setBone('spine', 0.06, 0, 0);
-  } else if (st === 'lie' || st === 'sleep') {
-    mdl.rotation.x = -Math.PI / 2;
-    setBone('head', st === 'sleep' ? 0.1 : 0.22, 0, 0);
-    setBone('leftUpperLeg', 0.05, 0, 0.03);
-    setBone('rightUpperLeg', 0.05, 0, -0.03);
-  } else if (st === 'pet') {
-    setBone('leftUpperLeg', -1.1, 0, 0.05);
-    setBone('rightUpperLeg', -1.1, 0, -0.05);
-    setBone('leftLowerLeg', 1.6, 0, 0);
-    setBone('rightLowerLeg', 1.6, 0, 0);
-    setBone('spine', 0.3, 0, 0);
-    setBone('head', 0.2, 0, 0);
-  } else {
-    setBone('spine', Math.sin(t * 1.4) * 0.02, 0, 0);
-    setBone('head', Math.sin(t * 0.9) * 0.03, Math.sin(t * 0.6) * 0.05, 0);
-  }
-  // 统一高度：站在地面 / 坐在座面 / 躺床上
-  const seatY = (SEAT_Y[bh.anchor] !== undefined ? SEAT_Y[bh.anchor] : 0.02);
-  const baseY = vrmModel ? vrmGroundY : 0;
-  if (st === 'lie' || st === 'sleep') mdl.position.y = baseY + 0.62;
-  else mdl.position.y = baseY + seatY;
-  if (vrmHumanoid) vrmHumanoid.update();
 }
 
 /* ============================ 循环 ============================ */
@@ -1908,16 +2050,22 @@ function tick(now) {
   // 有模型时：相机跟着模型走（固定斜前方），保证始终看得到她
   const followTarget = (vrmModel || modelRoot);
   if (followTarget && camAuto && !freeCam && !TOPVIEW) {
-    // 侧向机位：垂直于锚点朝向，稳定看到侧脸
+    // 侧向机位：先试一侧，出界就换另一侧，都出界才夹紧
     const anRef = (typeof ANCHOR !== 'undefined' && bh.anchor) ? ANCHOR[bh.anchor] : null;
     const ang = anRef ? (anRef.rotY || 0) : 0;
-    const right = new THREE.Vector3(Math.cos(ang), 0, -Math.sin(ang));
-    const want = followTarget.position.clone()
-      .add(right.multiplyScalar(2.25))
-      .add(new THREE.Vector3(0, 1.40, 0));
-    want.z = Math.max(-2.3, Math.min(2.86, want.z));
-    camera.position.lerp(want, 0.08);
-    controls.target.lerp(followTarget.position.clone().add(new THREE.Vector3(0, 0.85, 0)), 0.12);
+    const base = followTarget.position;
+    const side = new THREE.Vector3(Math.cos(ang), 0, -Math.sin(ang));
+    const D = 3.4;
+    const inRoom = v => v.x > -6.6 && v.x < 6.6 && v.z > -2.3 && v.z < 2.86;
+    let want = base.clone().add(side.clone().multiplyScalar(D));
+    if (!inRoom(want)) want = base.clone().add(side.clone().multiplyScalar(-D));
+    if (!inRoom(want)) {
+      want.x = Math.max(-6.5, Math.min(6.5, want.x));
+      want.z = Math.max(-2.25, Math.min(2.8, want.z));
+    }
+    want.y = base.y + 1.85;
+    camera.position.lerp(want, 0.18);
+    controls.target.lerp(base.clone().add(new THREE.Vector3(0, 0.95, 0)), 0.2);
   } else if (freeCam) {
     /* 自由视角：不干预相机 */
   } else if (camSnap && camAuto) {
