@@ -119,6 +119,31 @@ function resize() {
   camera.updateProjectionMatrix();
 }
 
+
+/* ============================ 灯光氛围 ============================ */
+const moodLights = [];
+let glbTvScreen = null;
+function addMoodLight(x, y, z, color, intensity, dist) {
+  const L = new THREE.PointLight(color, intensity, dist, 2);
+  L.position.set(x, y, z);
+  scene.add(L);
+  moodLights.push(L);
+  return L;
+}
+
+// 各房间暖光
+addMoodLight(2.4, 2.45, 3.2, 0xffd7a8, 6.5, 7.5);    // 客厅
+addMoodLight(-4.0, 2.35, 3.6, 0xffcf9e, 5.0, 6.0);   // 主卧
+addMoodLight(-3.5, 2.35, -3.2, 0xffd0b0, 4.2, 5.5);  // 电竞房
+addMoodLight(3.5, 2.35, -3.2, 0xffe0c0, 4.0, 5.5);   // 猫房
+addMoodLight(0.0, 2.20, -4.4, 0xdfe9ff, 3.2, 4.5);   // 卫生间
+addMoodLight(0.6, 2.0, -1.6, 0xffd9b0, 2.4, 4.0);    // 玄关
+
+// 电视冷光（会随电视开关变化）
+const tvGlowLight = new THREE.PointLight(0x6fc6ff, 0, 6, 2);
+tvGlowLight.position.set(2.4, 1.25, 5.2);
+scene.add(tvGlowLight);
+
 /* ============================ 程序化贴图 ============================ */
 function canvasTex(w, h, draw, repeat = 1) {
   const c = document.createElement('canvas');
@@ -1392,7 +1417,14 @@ function loadRoomShell() {
     loader.load('./model/room.glb', gltf => {
       const g = gltf.scene;
       g.traverse(o => {
-        if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }
+        if (!o.isMesh) return;
+        o.castShadow = true; o.receiveShadow = true;
+        if (/tvscreen/i.test(o.name)) {
+          o.material = new THREE.MeshStandardMaterial({
+            color: 0x0a1620, emissive: 0x000000, roughness: 0.25, metalness: 0.0
+          });
+          glbTvScreen = o;
+        }
       });
       scene.add(g);
       shell.visible = false;
@@ -2174,6 +2206,15 @@ function tick(now) {
   if (!modelRoot) girl.position.y = cur.root.y + Math.sin(t * 1.35) * 0.006;
   shade.material.emissiveIntensity = 1.05 + Math.sin(t * 2.2) * 0.05;
   screenLight.intensity = 1.5 + Math.sin(t * 5.1) * 0.12;
+  if (glbTvScreen) {
+    const on = (typeof tvOn !== 'undefined' && tvOn);
+    glbTvScreen.material.emissive.setHex(on ? 0x2f83b8 : 0x000000);
+    glbTvScreen.material.emissiveIntensity = on ? (0.85 + Math.sin(t * 5.1) * 0.06) : 0;
+  }
+  if (typeof tvGlowLight !== 'undefined') {
+    const on = (typeof tvOn !== 'undefined' && tvOn) ? 1 : 0;
+    tvGlowLight.intensity += ((on ? 2.2 + Math.sin(t * 7) * 0.25 : 0) - tvGlowLight.intensity) * 0.08;
+  }
 
   controls.update();
   renderer.render(scene, camera);
