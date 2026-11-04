@@ -1436,7 +1436,7 @@ function loadRoomShell() {
       g.traverse(o => {
         if (!o.isMesh) return;
         o.castShadow = true; o.receiveShadow = true;
-        if (/tvscreen/i.test(o.name)) {
+        if (/^(tv|tvscreen)$/i.test(o.name) || /tvscreen/i.test(o.name)) {
           o.material = new THREE.MeshStandardMaterial({
             color: 0x0a1620, emissive: 0x000000, roughness: 0.25, metalness: 0.0
           });

@@ -91,6 +91,24 @@ M_GREEN = plain("Plant", (0.22, 0.42, 0.26), 0.8)
 M_SAGE = plain("SageFabric", (0.60, 0.66, 0.58), 0.9)
 M_TERRA = plain("Terra", (0.70, 0.46, 0.38), 0.9)
 M_GOLD = plain("Gold", (0.78, 0.64, 0.36), 0.3, 0.8)
+M_TV = plain("TvGlass", (0.045, 0.055, 0.075), 0.12, 0.55)
+
+
+def soft(name, w, d, h, x, z, y=0.0, m=None, r=0.06, rz=0.0):
+    """软包家具：大倒角 + 3 段圆角"""
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(x, -z, y + h / 2))
+    o = bpy.context.active_object
+    o.name = name
+    o.scale = (w, d, h)
+    o.rotation_euler[2] = rz
+    if m:
+        o.data.materials.append(m)
+    md = o.modifiers.new("Bevel", "BEVEL")
+    md.width = r
+    md.segments = 3
+    bpy.context.view_layer.objects.active = o
+    bpy.ops.object.modifier_apply(modifier=md.name)
+    return o
 
 
 # ---------------------------------------------------------------- 基础几何
@@ -265,14 +283,24 @@ B("Sideboard", 2.0, 0.42, 0.85, 12.6, 2.9, 0, M_WOOD)
 B("DiningPendant", 0.9, 0.5, 0.08, 10.2, 4.0, 2.1, M_GOLD)
 
 # 客厅
-B("Sofa", 3.2, 1.0, 0.42, 10.6, 10.2, 0, M_LINEN)
-B("SofaBack", 3.2, 0.25, 0.78, 10.6, 10.72, 0, M_LINEN)
-B("SofaArmL", 0.25, 1.0, 0.56, 8.9, 10.2, 0, M_LINEN)
-B("SofaArmR", 0.25, 1.0, 0.56, 12.3, 10.2, 0, M_LINEN)
+soft("SofaBase", 3.2, 1.05, 0.26, 10.6, 10.2, 0.06, M_LINEN, 0.05)
+soft("SofaSeatL", 1.42, 0.92, 0.2, 9.88, 10.15, 0.3, M_LINEN, 0.08)
+soft("SofaSeatR", 1.42, 0.92, 0.2, 11.32, 10.15, 0.3, M_LINEN, 0.08)
+soft("SofaBack", 3.2, 0.3, 0.62, 10.6, 10.78, 0.28, M_LINEN, 0.07)
+soft("SofaBackCush1", 1.35, 0.22, 0.5, 9.9, 10.62, 0.42, M_LINEN, 0.09)
+soft("SofaBackCush2", 1.35, 0.22, 0.5, 11.3, 10.62, 0.42, M_LINEN, 0.09)
+soft("SofaArmL", 0.26, 1.0, 0.52, 8.86, 10.2, 0.16, M_LINEN, 0.09)
+soft("SofaArmR", 0.26, 1.0, 0.52, 12.34, 10.2, 0.16, M_LINEN, 0.09)
+for sx in (9.25, 11.95):
+    for sz in (9.85, 10.55):
+        cyl("SofaLegX", 0.04, 0.08, sx, sz, 0, m=M_DARK, seg=10)
+soft("PillowA", 0.42, 0.16, 0.36, 9.75, 10.52, 0.44, M_TERRA, 0.07, rz=0.2)
+soft("PillowB", 0.42, 0.16, 0.36, 11.45, 10.52, 0.44, M_SAGE, 0.07, rz=-0.15)
 B("RugL", 4.2, 3.0, 0.02, 10.6, 10.9, 0, M_SAGE)
 B("CoffeeT", 1.6, 0.8, 0.42, 10.6, 11.2, 0, M_WOOD)
 B("TvCab", 3.0, 0.45, 0.45, 10.6, 9.1, 0, M_WOOD)
-B("Tv", 2.5, 0.08, 1.4, 10.6, 8.95, 0.75, M_SCREEN)
+B("Tv", 2.5, 0.07, 1.4, 10.6, 8.95, 0.75, M_TV)
+B("TvStand", 0.35, 0.2, 0.06, 10.6, 8.99, 0.72, M_METAL)
 B("ShelfL", 0.4, 3.4, 2.1, 6.9, 9.6, 0, M_WOOD)
 B("PlantL", 0.5, 0.5, 0.5, 13.5, 8.4, 0, M_WOOD_L)
 sph("PlantLTop", 0.5, 13.5, 8.4, 1.0, M_GREEN)
@@ -296,10 +324,10 @@ B("Rail", 7.4, 0.06, 1.05, 10.3, 15.0, 0, M_GLASS)
 
 # ---------------------------------------------------------------- 补充家具
 # ===== 客厅 =====
-B("AccentChair1", 0.8, 0.8, 0.45, 8.30, 9.40, 0, M_TERRA, rz=0.5)
-B("AccentChair1Back", 0.8, 0.18, 0.6, 8.55, 9.12, 0, M_TERRA, rz=0.5)
-B("AccentChair2", 0.8, 0.8, 0.45, 12.70, 11.20, 0, M_SAGE, rz=-0.4)
-B("AccentChair2Back", 0.8, 0.18, 0.6, 12.55, 10.95, 0, M_SAGE, rz=-0.4)
+soft("AccentChair1", 0.78, 0.78, 0.4, 8.30, 9.40, 0.12, M_TERRA, 0.09, rz=0.5)
+soft("AccentChair1Back", 0.78, 0.2, 0.6, 8.55, 9.12, 0.32, M_TERRA, 0.09, rz=0.5)
+soft("AccentChair2", 0.78, 0.78, 0.4, 12.70, 11.20, 0.12, M_SAGE, 0.09, rz=-0.4)
+soft("AccentChair2Back", 0.78, 0.2, 0.6, 12.55, 10.95, 0.32, M_SAGE, 0.09, rz=-0.4)
 B("SideTable1", 0.45, 0.45, 0.5, 7.90, 10.30, 0, M_WOOD)
 B("SideTable2", 0.45, 0.45, 0.5, 13.10, 10.40, 0, M_WOOD)
 B("Art1", 1.6, 0.04, 0.9, 10.60, 5.62, 1.5, M_TERRA)
@@ -342,6 +370,22 @@ B("ClosetRug", 2.2, 1.4, 0.02, 4.80, 5.90, 0, M_LINEN)
 B("BalconyPlant1", 0.45, 0.45, 0.42, 7.00, 14.60, 0, M_WOOD_L)
 sph("BalconyPlantTop1", 0.42, 7.00, 14.60, 0.85, M_GREEN)
 B("BalconyMat", 2.2, 1.2, 0.02, 9.00, 13.60, 0, M_LINEN)
+
+
+# ===== 主卧补充 =====
+soft("BedMQuilt", 2.1, 2.0, 0.16, 3.00, 10.55, 0.46, M_SAGE, 0.07)
+soft("BedMFold", 2.1, 0.5, 0.18, 3.00, 9.53, 0.48, M_LINEN, 0.06)
+soft("MasterArmchair", 0.86, 0.86, 0.42, 5.55, 9.25, 0.12, M_TERRA, 0.1, rz=-0.6)
+soft("MasterArmBack", 0.86, 0.2, 0.6, 5.78, 9.05, 0.36, M_TERRA, 0.1, rz=-0.6)
+B("MasterSideT", 0.42, 0.42, 0.5, 5.15, 10.35, 0, M_WOOD)
+cyl("MasterLampPole", 0.03, 1.55, 5.95, 12.15, 0.05, m=M_METAL, seg=10)
+cyl("MasterLampShade", 0.24, 0.3, 5.95, 12.15, 1.6, m=M_LINEN, seg=18)
+B("MasterDresser", 1.2, 0.45, 0.8, 0.75, 12.15, 0, M_WOOD_L)
+B("MasterDresserTop", 1.3, 0.5, 0.05, 0.75, 12.15, 0.8, M_MARBLE)
+B("MasterDresserMirror", 1.1, 0.05, 0.9, 0.75, 12.36, 1.1, M_GLASS)
+soft("MasterRugExt", 3.6, 2.6, 0.02, 3.00, 10.90, 0, M_LINEN, 0.02)
+B("MasterPlant", 0.45, 0.45, 0.42, 6.15, 10.65, 0, M_WOOD_L)
+sph("MasterPlantTop", 0.45, 6.15, 10.65, 0.82, M_GREEN)
 
 bpy.ops.export_scene.gltf(
     filepath=out,
