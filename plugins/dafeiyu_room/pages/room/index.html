@@ -76,6 +76,7 @@ import { ShaderPass } from './three/examples/jsm/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from './three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from './three/examples/jsm/postprocessing/OutputPass.js';
 import { RoomEnvironment } from './three/examples/jsm/environments/RoomEnvironment.js';
+import { SSAOPass } from './three/examples/jsm/postprocessing/SSAOPass.js';
 
 /* ============================ 渲染基础 ============================ */
 const canvas = document.getElementById('c');
@@ -2188,6 +2189,14 @@ const composer = new EffectComposer(renderer);
 composer.setPixelRatio(1);
 composer.setSize(window.innerWidth, window.innerHeight);
 composer.addPass(new RenderPass(scene, camera));
+
+// 环境光遮蔽：家具底部、墙角的接触阴影
+const ssao = new SSAOPass(scene, camera, window.innerWidth, window.innerHeight);
+ssao.kernelRadius = 0.55;
+ssao.minDistance = 0.0015;
+ssao.maxDistance = 0.12;
+ssao.output = SSAOPass.OUTPUT.Default;
+composer.addPass(ssao);
 
 const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.09, 0.6, 0.95);
 composer.addPass(bloom);

@@ -321,3 +321,23 @@ ACES 会压暗高光但也会让整体变亮，原来给无 ACES 调的灯光（
 1. 12×12 四区（客厅/主卧/电竞/猫房）→ 房间偏小
 2. 尝试验收 205㎡ 四房图纸（build_plan205.py）→ 房间过多过碎
 3. **当前：14×15 三室两厅**，房间普遍放大，客厅 52㎡、主卧 39㎡
+
+
+## 环境光遮蔽（SSAO）
+
+页面用 `SSAOPass` 做实时接触阴影：
+
+```js
+const ssao = new SSAOPass(scene, camera, w, h);
+ssao.kernelRadius = 0.55;   // 世界单位，房间 14×15 用 0.5~0.7
+ssao.minDistance = 0.0015;
+ssao.maxDistance = 0.12;
+composer.addPass(ssao);     // 放在 RenderPass 之后、Bloom 之前
+```
+
+作用：家具底部、墙角、柜体接缝处变暗，家具不再“浮在地面上”。
+
+调参经验：
+- `kernelRadius` 太小（<0.2）没有效果；太大（>1.0）会出现黑边
+- 房间尺寸越大，半径要跟着放大
+- 和高强度泛光叠加会让画面发灰，泛光强度要相应降低
