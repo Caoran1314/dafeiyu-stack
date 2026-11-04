@@ -89,10 +89,10 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xeaf2f9);
-scene.fog = new THREE.FogExp2(0xeaf2f9, 0.02);
+scene.fog = new THREE.FogExp2(0xe8eef5, 0.0065);   // 远景轻微空气感，不要糊
 
 const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 60);
-camera.position.set(4.2, 2.2, 8.0);
+camera.position.set(7.0, 15.0, 18.0);
 
 const controls = new OrbitControls(camera, canvas);
 controls.target.set(-0.8, 0.85, -1.3);
@@ -107,7 +107,7 @@ controls.enablePan = false;
 // 调试俯视：访问 index.html?cam=top
 const TOPVIEW = new URLSearchParams(location.search).get('cam') === 'top';
 if (TOPVIEW) {
-  camera.position.set(0, 20, 12);
+  camera.position.set(7, 20, 18);
   controls.target.set(0, 0, 0.4);
 }
 
@@ -138,12 +138,12 @@ function addMoodLight(x, y, z, color, intensity, dist) {
 }
 
 // 各房间暖光
-addMoodLight(2.4, 2.45, 3.2, 0xffd7a8, 2.2, 7.5);    // 客厅
-addMoodLight(-4.0, 2.35, 3.6, 0xffcf9e, 1.7, 6.0);   // 主卧
-addMoodLight(-3.5, 2.35, -3.2, 0xffd0b0, 1.4, 5.5);  // 电竞房
-addMoodLight(3.5, 2.35, -3.2, 0xffe0c0, 1.3, 5.5);   // 猫房
-addMoodLight(0.0, 2.20, -4.4, 0xdfe9ff, 1.1, 4.5);   // 卫生间
-addMoodLight(0.6, 2.0, -1.6, 0xffd9b0, 0.9, 4.0);    // 玄关
+addMoodLight(10.6, 2.5, 10.0, 0xffd7a8, 3.4, 9.0);    // 客厅
+addMoodLight(3.0, 2.4, 10.2, 0xffcf9e, 2.6, 7.5);   // 主卧
+addMoodLight(4.9, 2.4, 1.6, 0xffd0b0, 1.8, 5.5);  // 电竞房
+addMoodLight(10.2, 2.4, 4.0, 0xffe0c0, 2.0, 6.0);   // 猫房
+addMoodLight(10.0, 2.2, 13.6, 0xdfe9ff, 1.6, 6.0);   // 卫生间
+addMoodLight(8.0, 2.2, 1.2, 0xffd9b0, 1.3, 5.0);    // 玄关
 
 // 电视冷光（会随电视开关变化）
 const tvGlowLight = new THREE.PointLight(0x6fc6ff, 0, 6, 2);
@@ -1489,11 +1489,11 @@ function buildCat(bodyColor, tailColor, scale) {
 }
 
 const CAT_SPOTS = [
-  { name: 'catbed', pos: [2.40, 0.10, -2.40], rot: 0.4 },
-  { name: 'bed2',   pos: [4.60, 0.10, -2.60], rot: 2.4 },
-  { name: 'tree1',  pos: [1.90, 1.5, -5.00], rot: -0.6 },
-  { name: 'tree2',  pos: [5.10, 1.5, -5.20], rot: 1.2 },
-  { name: 'living', pos: [3.20, 0.02, 4.60], rot: 1.6 },
+  { name: 'sofa',    pos: [11.80, 0.50, 10.10], rot: 0.4 },
+  { name: 'rug',     pos: [10.20, 0.04, 11.00], rot: 2.4 },
+  { name: 'balcony', pos: [9.20, 0.04, 13.60], rot: -0.6 },
+  { name: 'deck',    pos: [12.40, 0.04, 14.20], rot: 1.2 },
+  { name: 'corridor',pos: [3.20, 0.04, 3.60], rot: 1.6 },
 ];
 
 const cats = [
@@ -1595,21 +1595,21 @@ applyPose(POSE.sleep, 1);
 
 /* ============================ 行为（走动 / 坐下 / 看电视） ============================ */
 const ANCHOR = {
-  bed:    { pos: [-4.00, 0.60, 4.55], rotY: Math.PI, pose: 'lie', label: '躺床上刷手机' },
-  sleep:  { pos: [-4.00, 0.60, 4.55], rotY: Math.PI, pose: 'sleep', label: '睡着了' },
-  catbed: { pos: [2.40, 0.20, -2.80], rotY: 0.25, pose: 'pet', label: '在猫房撸猫' },
-  catroom:{ pos: [3.60, 0.20, -3.80], rotY: 0.6, pose: 'pet', label: '在猫房陪猫' },
-  dresser:{ pos: [-2.30, 0.44, 3.20], rotY: Math.PI / 2, pose: 'dresser', label: '在梳妆台前' },
-  rug:    { pos: [2.40, 0.02, 4.35], rotY: 0.4, pose: 'yoga', label: '在地毯上拉伸' },
-  sofa:   { pos: [2.40, 0.56, 3.65], rotY: 0, pose: 'sitSofa', label: '窝在沙发上' },
-  tv:     { pos: [2.40, 0.56, 3.65], rotY: 0, pose: 'sitSofa', label: '窝在沙发看电视' },
-  desk:   { pos: [-3.50, 0.50, -3.90], rotY: Math.PI, pose: 'sit', label: '在电竞房打游戏' },
-  gaming: { pos: [-3.50, 0.50, -3.90], rotY: Math.PI, pose: 'sit', label: '在电竞房打游戏' },
-  window: { pos: [-5.30, 0.44, 4.60], rotY: -Math.PI / 2, pose: 'window', label: '主卧窗边发呆' },
-  study:  { pos: [4.90, 0.02, 4.70], rotY: Math.PI / 2, pose: 'read', label: '在书房看书' },
-  closet: { pos: [-2.20, 0.02, 3.40], rotY: -Math.PI / 2, pose: 'dresser', label: '在衣帽间挑衣服' },
-  balcony:{ pos: [2.50, 0.02, 7.05], rotY: 0, pose: 'stand', label: '在阳台吹风' },
-  center: { pos: [1.60, 0.02, 1.40], rotY: 0.0, pose: 'stand', label: '站在房间中间' }
+  bed:    { pos: [3.00, 0.60, 10.40], rotY: 0, pose: 'lie', label: '主卧躺着' },
+  sleep:  { pos: [3.00, 0.60, 10.40], rotY: 0, pose: 'sleep', label: '睡着了' },
+  sofa:   { pos: [10.60, 0.56, 10.20], rotY: Math.PI, pose: 'sitSofa', label: '在客厅沙发' },
+  tv:     { pos: [10.60, 0.56, 10.20], rotY: Math.PI, pose: 'sitSofa', label: '在客厅看电视' },
+  desk:   { pos: [4.90, 0.52, 1.05], rotY: Math.PI, pose: 'sit', label: '在次卧书桌' },
+  gaming: { pos: [4.90, 0.52, 1.05], rotY: Math.PI, pose: 'sit', label: '在次卧打游戏' },
+  study:  { pos: [4.90, 0.52, 1.05], rotY: Math.PI, pose: 'read', label: '在次卧看书' },
+  window: { pos: [13.20, 0.02, 11.60], rotY: -Math.PI / 2, pose: 'window', label: '客厅窗边' },
+  rug:    { pos: [10.60, 0.02, 10.90], rotY: 0.3, pose: 'yoga', label: '地毯上拉伸' },
+  dresser:{ pos: [1.90, 0.02, 4.85], rotY: Math.PI / 2, pose: 'dresser', label: '主卫梳洗' },
+  catbed: { pos: [10.00, 0.02, 11.60], rotY: 0.4, pose: 'pet', label: '在客厅撸猫' },
+  catroom:{ pos: [9.00, 0.02, 13.60], rotY: 0.2, pose: 'pet', label: '在阳台陪猫' },
+  closet: { pos: [5.00, 0.02, 5.60], rotY: Math.PI / 2, pose: 'dresser', label: '在衣帽间' },
+  balcony:{ pos: [9.00, 0.02, 13.80], rotY: Math.PI, pose: 'stand', label: '在阳台' },
+  center: { pos: [10.60, 0.02, 8.20], rotY: Math.PI, pose: 'stand', label: '站在客厅' }
 };
 
 // 沙发坐姿：膝盖并拢向前，身体略后仰
@@ -1641,18 +1641,29 @@ const bh = {
 
 
 
+const ROOM_RECTS = [
+  [6.8, 13.9, 5.6, 12.4],    // 客厅
+  [6.8, 13.9, 2.6, 5.4],     // 餐厅
+  [9.7, 13.9, 0.2, 2.4],     // 厨房
+  [6.8, 9.5, 0.2, 2.4],      // 玄关
+  [0.2, 3.1, 0.2, 2.9],      // 次卧A
+  [3.3, 6.5, 0.2, 2.9],      // 次卧B
+  [0.2, 6.5, 3.1, 4.1],      // 走廊
+  [0.2, 2.9, 4.3, 6.4],      // 主卫
+  [3.1, 6.5, 4.3, 6.4],      // 衣帽间
+  [0.2, 6.5, 6.6, 12.4],     // 主卧
+  [6.8, 13.9, 12.6, 14.8],   // 阳台
+];
+
 function clampToRoom(px, pz, ax, az) {
-  // 四个区域的可站范围（离墙 0.6 m）
-  let box;
-  if (az > 6.1)                 box = [-0.4, 5.4, 6.3, 7.6];    // 阳台
-  else if (ax > 3.2 && az > 3.2) box = [3.9, 5.4, 3.9, 5.4];     // 书房
-  else if (ax > -3.2 && ax < -1) box = [-2.95, -1.5, 1.5, 5.4];   // 衣帽间
-  else if (az > 1 && ax < -1)   box = [-5.4, -2.9, 1.6, 5.4];    // 主卧
-  else if (ax < -1)             box = [-5.4, -1.6, -4.6, -1.6];  // 电竞房
-  else if (az < -1)             box = [1.6, 5.4, -5.4, -1.6];    // 猫房
-  else                          box = [-0.4, 5.4, -0.4, 5.4];    // 客厅
-  return [Math.min(box[1], Math.max(box[0], px)),
-          Math.min(box[3], Math.max(box[2], pz))];
+  let best = null, bestD = 1e9;
+  for (const [x0, x1, z0, z1] of ROOM_RECTS) {
+    const cx = Math.min(x1, Math.max(x0, px));
+    const cz = Math.min(z1, Math.max(z0, pz));
+    const d = (cx - px) ** 2 + (cz - pz) ** 2;
+    if (d < bestD) { bestD = d; best = [cx, cz]; }
+  }
+  return best || [px, pz];
 }
 
 function autoCam(anchorName) {
@@ -1823,7 +1834,7 @@ let freeCam = false;
 
 
 /* ============================ 视角控制 ============================ */
-const OVERVIEW = { pos: [0.2, 19.5, 12.5], target: [0.0, 0.1, 0.4] };
+const OVERVIEW = { pos: [7.0, 19.0, 18.5], target: [7.0, 0.1, 7.6] };
 
 function gotoOverview() {
   camAuto = false;
@@ -2240,12 +2251,12 @@ function tick(now) {
     const base = followTarget.position;
     const side = new THREE.Vector3(Math.cos(ang), 0, -Math.sin(ang));
     const D = 3.4;
-    const inRoom = v => v.x > -6.35 && v.x < 6.35 && v.z > -6.35 && v.z < 8.0;
+    const inRoom = v => v.x > -0.2 && v.x < 14.2 && v.z > -0.2 && v.z < 15.2;
     let want = base.clone().add(side.clone().multiplyScalar(D));
     if (!inRoom(want)) want = base.clone().add(side.clone().multiplyScalar(-D));
     if (!inRoom(want)) {
-      want.x = Math.max(-6.3, Math.min(6.3, want.x));
-      want.z = Math.max(-6.3, Math.min(7.8, want.z));
+      want.x = Math.max(0.3, Math.min(13.7, want.x));
+      want.z = Math.max(0.3, Math.min(14.7, want.z));
     }
     want.y = base.y + 1.85;
     camera.position.lerp(want, 0.18);

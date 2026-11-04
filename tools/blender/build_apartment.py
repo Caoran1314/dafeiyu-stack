@@ -237,11 +237,10 @@ wall_x("OuterE", R, -R, R)
 wall_z("BedLiving", 1, -R, -1, door=-3.5, m=M_WALL_WARM)      # 主卧 ↔ 客厅
 wall_x("LeftHall", -1, -5, 1, door=-3, m=M_WALL_SAGE)          # 电竞房 ↔ 玄关
 wall_x("CatHall", 1, -R, -1, door=-3.5, m=M_WALL_SAGE)         # 猫房 ↔ 玄关
-wall_z("CatLiving", -1, 1, R, door=3.5, m=M_WALL_WARM)
-# 书房隔断（x=3.2，门在 z=5），靠客厅东北角
-wall_x("StudyWall", 3.2, 3.2, R, door=5.0, door_w=0.9, m=M_WALL_WARM)
-# 衣帽间隔断（x=-2.6，门在 z=3.2），从主卧东侧划出
-wall_x("ClosetWall", -3.2, 1, R, door=3.2, door_w=0.9, m=M_WALL_WARM)         # 猫房 ↔ 客厅
+wall_z("CatLiving", -3, 1, R, door=3.6, m=M_WALL_WARM)
+# 衣帽间：卧室内 2×2（x -3..-1，z 1..3），门在 z=3
+wall_x("ClosetW", -3.0, 1, 3, None, 0, m=M_WALL_WARM)
+wall_z("ClosetN", 3.0, -3, -1, door=-2.1, door_w=0.8, m=M_WALL_WARM)
 
 # 踢脚线
 for (x, z, w, d) in [(0, -R + 0.07, R * 2, 0.02), (0, R - 0.07, R * 2, 0.02),
@@ -267,12 +266,12 @@ def rug(name, x, z, r, m=M_RUG):
 # 沙发 (2.4, 3.6) 面向 +z（北）
 sx, sy = J(2.4, 3.6)
 box("SofaBase", 1.9, 0.95, 0.34, sx, sy, 0.2, m=M_FABRIC)
-box("SofaBack", 1.9, 0.22, 0.66, sx, sy - 0.4, 0.55, m=M_FABRIC)
+box("SofaBack", 1.9, 0.22, 0.66, sx, sy + 0.4, 0.55, m=M_FABRIC)
 box("SofaArmL", 0.22, 0.95, 0.5, sx - 0.95, sy, 0.4, m=M_FABRIC)
 box("SofaArmR", 0.22, 0.95, 0.5, sx + 0.95, sy, 0.4, m=M_FABRIC)
 box("SofaCushion", 1.7, 0.8, 0.14, sx, sy + 0.02, 0.42, m=M_LINEN)
 for dx in (-0.45, 0.45):
-    box("SofaPillow", 0.42, 0.16, 0.34, sx + dx, sy - 0.28, 0.58, rz=0.1, m=M_LINEN)
+    box("SofaPillow", 0.42, 0.16, 0.34, sx + dx, sy + 0.28, 0.58, rz=0.1, m=M_LINEN)
 
 # 地毯 + 茶几
 rug("LivingRug", 2.4, 4.35, 1.55)
@@ -318,7 +317,7 @@ for i in range(5):
     sph("Leaf", 0.22, 5.2 + math.cos(a) * 0.12, -5.3 + math.sin(a) * 0.12, 0.55 + i * 0.08, m=M_GREEN, sy=0.8)
 
 # ===== 主卧 =====
-bx, by = J(-4.0, 4.55)
+bx, by = J(-4.20, 4.55)
 box("BedFrame", 2.1, 1.6, 0.3, bx, by, 0.15, m=M_DARK)
 box("BedMattress", 2.0, 1.5, 0.24, bx, by, 0.42, m=M_FABRIC)
 box("BedSheet", 1.95, 1.45, 0.1, bx, by, 0.56, m=M_LINEN)
@@ -326,12 +325,12 @@ box("BedHead", 2.12, 0.12, 0.9, bx, by + 0.8, 0.62, m=M_WOOD)
 box("BedPillow1", 0.6, 0.34, 0.14, bx - 0.5, by + 0.5, 0.64, rz=0.05, m=M_FABRIC)
 box("BedPillow2", 0.6, 0.34, 0.14, bx + 0.05, by + 0.5, 0.64, m=M_FABRIC)
 
-for nx in (-5.55, -2.45):
+for nx in (-5.55, -2.85):
     box("Nightstand", 0.45, 0.42, 0.5, nx, -4.55, 0.25, m=M_WOOD)
     box("NsTop", 0.48, 0.45, 0.04, nx, -4.55, 0.52, m=M_WOOD_L, bevel=0)
 
 # 衣柜（西墙 x=-5.62，z=2.4）
-box("Wardrobe", 0.6, 2.6, 2.3, -5.62, -2.4, 1.15, m=M_WOOD)
+box("Wardrobe", 0.6, 2.6, 2.3, -5.62, -1.9, 1.15, m=M_WOOD)
 for i in range(3):
     box("WardrobeDoor", 0.02, 0.8, 2.2, -5.31, -3.2 + i * 0.85, 1.15, m=M_WOOD_L, bevel=0)
 
@@ -438,10 +437,12 @@ def door_casing(x, z, along="z", w=1.0):
         box("CasingTop", w + 0.2, WALL + 0.06, 0.12, x, -z, 2.16, m=M_WOOD_L, bevel=0)
 
 
-door_casing(-3.5, 1, "z")
-door_casing(-1, -3, "z")
-door_casing(1, -3.5, "z")
-door_casing(3.5, -1, "z")
+door_casing(-3.5, 1, "x", 1.0)     # 主卧门（墙沿 X）
+door_casing(-1, -3, "z", 1.0)      # 电竞房门（墙沿 Z）
+door_casing(1, -4.5, "z", 0.9)     # 猫房门（墙沿 Z）
+door_casing(3.6, -3, "x", 1.0)     # 猫房→客厅
+door_casing(0.2, -3.5, "x", 0.8)   # 卫生间门
+door_casing(-2.1, 3, "x", 0.8)     # 衣帽间门
 
 # 背景墙
 box("FeatureTvWall", 3.6, 0.06, 2.2, 2.4, -5.92, 1.12, m=M_WALL_TERRA, bevel=0)

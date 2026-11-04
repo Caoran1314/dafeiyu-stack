@@ -1,0 +1,186 @@
+# ---------------------------------------------------------------- 新布局重定位
+# 用对象名统一搬家，避免逐个改坐标出错
+def move(name, x, z, rz=None, dz=0.0):
+    o = bpy.data.objects.get(name)
+    if not o:
+        return
+    o.location = (x, -z, o.location.z + dz)
+    if rz is not None:
+        o.rotation_euler[2] = rz
+
+
+def move_prefix(prefix, x, z, rz=None, dz=0.0):
+    for o in bpy.data.objects:
+        if o.name.startswith(prefix):
+            o.location = (x, -z, o.location.z + dz)
+            if rz is not None:
+                o.rotation_euler[2] = rz
+
+
+# ===== 主卧（x -6..-1，z 1..6）=====
+move_prefix("BedFrame", -4.30, 4.60)
+move_prefix("BedMattress", -4.30, 4.60)
+move_prefix("BedSheet", -4.30, 4.60)
+move_prefix("BedHead", -4.30, 4.60)
+move_prefix("BedHeadSoft", -4.30, 4.60)
+move_prefix("BedPillow1", -4.85, 4.10)
+move_prefix("BedPillow2", -4.30, 4.10)
+move_prefix("BedDuvet", -4.30, 3.90)
+move_prefix("BedDuvetFold", -4.30, 4.35)
+move_prefix("BedThrow", -4.30, 3.55)
+move_prefix("Nightstand", -5.55, 4.60)
+move_prefix("NsTop", -5.55, 4.60)
+move_prefix("Clock", -3.15, 4.45)
+move_prefix("NightLampBase", -5.55, 4.25)
+move_prefix("NightLampBulb", -5.55, 4.25)
+move_prefix("Slippers", -4.60, 3.60)
+move_prefix("Wardrobe", -5.66, 2.60, math.pi / 2)
+move_prefix("BedRug", -4.30, 3.20)
+move_prefix("BedRugTrim", -4.30, 2.15)
+# 梳妆台放卧室东墙
+move_prefix("DresserBody", -1.62, 4.30)
+move_prefix("DresserTop", -1.62, 4.30)
+move_prefix("MirrorRing", -1.90, 4.30)
+move_prefix("MirrorGlass", -1.88, 4.30)
+
+# ===== 衣帽间（x -3..-1，z 1..3）=====
+move_prefix("ClosetWard1", -1.32, 2.00)
+move_prefix("ClosetDoor1", -1.58, 2.00)
+move_prefix("ClosetWard2", -2.10, 1.35)
+move_prefix("ClosetIsland", -2.10, 2.20)
+move_prefix("ClosetIslandTop", -2.10, 2.20)
+move_prefix("ClosetMirror", -2.90, 1.60)
+move_prefix("ClosetMirrorRing", -2.92, 1.60)
+move_prefix("ClosetRug", -2.10, 2.30)
+
+# ===== 电竞房（x -6..-1，z -6..-1）=====
+move_prefix("DeskTop", -3.50, -4.60)
+move_prefix("DeskLeg", -3.50, -4.60)
+move_prefix("MonitorStand", -3.50, -4.70)
+move_prefix("MonitorBody", -3.50, -4.74)
+move_prefix("MonitorScreen", -3.50, -4.71)
+move_prefix("Monitor2", -2.78, -4.70, -0.4)
+move_prefix("Keyboard", -3.50, -4.35)
+move_prefix("ChairSeat", -3.50, -3.85, math.pi)
+move_prefix("ChairBack", -3.50, -3.65, math.pi)
+move_prefix("ChairPole", -3.50, -3.85)
+move_prefix("ChairBase", -3.50, -3.85)
+move_prefix("PcCase", -5.10, -4.60)
+move_prefix("PcGlass", -4.97, -4.60)
+move_prefix("GShelf", -5.66, -2.60, math.pi / 2)
+move_prefix("Poster", -3.50, -5.92)
+move_prefix("GLampBase", -1.75, -4.60)
+move_prefix("GLampPole", -1.75, -4.60)
+move_prefix("GLampShade", -1.75, -4.60)
+
+# ===== 猫房（x 1..6，z -6..-3）=====
+move_prefix("CatTree1", 2.05, -5.25)
+move_prefix("CatTree2", 5.05, -5.15)
+move_prefix("CatBed1", 2.60, -3.70)
+move_prefix("CatBed2", 4.85, -3.75)
+move_prefix("LitterBox", 5.50, -4.60)
+move_prefix("BowlStand", 3.60, -5.60)
+move_prefix("Bowl", 3.60, -5.60)
+move_prefix("ScratchPad", 1.45, -3.95)
+move_prefix("ScratchPole", 1.45, -3.95)
+move_prefix("CatScratchPost", 4.10, -5.40)
+move_prefix("CatScratchBase", 4.10, -5.40)
+move_prefix("CatShelf", 2.20, -5.85)
+move_prefix("CatToy", 3.10, -4.20)
+move_prefix("CatCushion", 4.85, -3.75)
+move_prefix("CatLight", 3.50, -4.60)
+
+# ===== 卫生间（x -1..1，z -6..-3.5）=====
+move_prefix("BathTub", 0.00, -5.20)
+move_prefix("BathInner", 0.00, -5.20)
+move_prefix("BathTaps", 0.62, -5.20)
+move_prefix("ToiletBase", -0.62, -5.30)
+move_prefix("ToiletTank", -0.62, -5.55)
+move_prefix("ToiletSeat", -0.62, -5.26)
+move_prefix("VanityBody", 0.55, -3.95)
+move_prefix("VanityTop", 0.55, -3.95)
+move_prefix("Basin", 0.55, -3.95)
+move_prefix("BathMirror", 0.55, -3.58)
+move_prefix("BathMirrorRing", 0.57, -3.58)
+
+# ===== 玄关（x -1..1，z -3.5..-1）=====
+move_prefix("ShoeCabinet", 0.0, -1.45)
+move_prefix("ShoeTop", 0.0, -1.45)
+move_prefix("ShoeCabinet2", 0.0, -1.45)
+move_prefix("ShoeTop2", 0.0, -1.45)
+move_prefix("ShoeBench", -0.55, -1.85)
+move_prefix("Doormat", 0.0, -2.30)
+move_prefix("HallArt", 0.0, -3.46)
+
+# ===== 客厅（x -1..6，z -1..6）=====
+move_prefix("SofaBase", 2.40, 3.35)
+move_prefix("SofaBack", 2.40, 2.95)
+move_prefix("SofaArmL", 1.45, 3.35)
+move_prefix("SofaArmR", 3.35, 3.35)
+move_prefix("SofaCushion", 2.40, 3.37)
+move_prefix("SofaPillow", 2.40, 3.07)
+move_prefix("SofaLeg", 2.40, 3.35)
+move_prefix("SofaSeatL", 1.95, 3.33)
+move_prefix("SofaSeatR", 2.85, 3.33)
+move_prefix("SofaThrow", 2.90, 3.25)
+move_prefix("PillowAccent", 2.00, 3.40)
+move_prefix("LivingRug", 2.40, 4.35)
+move_prefix("RugTrim", 2.40, 5.85)
+move_prefix("CoffeeTop", 2.40, 4.35)
+move_prefix("CoffeeLeg", 2.40, 4.35)
+move_prefix("Book1", 2.30, 4.35)
+move_prefix("Book2", 2.34, 4.36)
+move_prefix("SmallPot", 2.85, 4.35)
+move_prefix("SmallPlant", 2.85, 4.35)
+move_prefix("TvUnit", 2.40, 5.68)
+move_prefix("TvBody", 2.40, 5.90)
+move_prefix("TvScreen", 2.40, 5.86)
+move_prefix("Soundbar", 2.40, 5.62)
+move_prefix("TvBox", 2.95, 5.60)
+move_prefix("DiningTop", 4.60, 1.40)
+move_prefix("DiningLeg", 4.60, 1.40)
+move_prefix("FruitBowl", 4.60, 1.40)
+move_prefix("Fruit", 4.60, 1.40)
+move_prefix("Vase", 4.25, 1.45)
+move_prefix("VaseFlower", 4.25, 1.45)
+move_prefix("KitchenCounter", 5.60, 1.20)
+move_prefix("KitchenTop", 5.60, 1.20)
+move_prefix("KitchenSink", 5.55, 1.60)
+move_prefix("KitchenCabinet", 5.62, 1.20)
+move_prefix("Fridge", 5.62, 2.90)
+move_prefix("Microwave", 5.60, 0.60)
+move_prefix("CoffeeMachine", 5.60, 0.10)
+move_prefix("CoffeeCup", 5.60, 0.10)
+move_prefix("ShelfBody", -0.78, 4.60)
+move_prefix("ShelfBoard", -0.80, 4.60)
+move_prefix("Book", -0.82, 4.60)
+move_prefix("ShelfItem", -0.85, 4.60)
+move_prefix("LampBase", 0.15, 5.15)
+move_prefix("LampPole", 0.15, 5.15)
+move_prefix("LampShade", 0.15, 5.15)
+move_prefix("Pot", 5.20, 5.30)
+move_prefix("Leaf", 5.20, 5.30)
+move_prefix("WallClock", 5.90, 2.10)
+move_prefix("ClockRim", 5.86, 2.10)
+move_prefix("ArtLiving", 4.60, 5.90)
+move_prefix("ArtLiving2", 0.90, 5.90)
+move_prefix("ArtBed", -2.60, 1.10, math.pi / 2)
+move_prefix("ArtGame", -5.90, -3.20, math.pi / 2)
+move_prefix("StudyDeskTop", 5.40, 4.70)
+move_prefix("StudyDeskLeg", 5.40, 4.70)
+move_prefix("StudyChairSeat", 4.80, 4.70)
+move_prefix("StudyChairBack", 4.58, 4.70)
+move_prefix("StudyLamp", 5.35, 4.10)
+move_prefix("StudyLampArm", 5.35, 4.10)
+move_prefix("StudyLampHead", 5.35, 4.15)
+move_prefix("StudyShelf", 3.90, 5.70)
+move_prefix("StudyRug", 4.60, 4.20)
+move_prefix("StudyBooks1", 5.30, 4.90)
+move_prefix("StudyBooks2", 5.32, 4.92)
+
+# 沙发朝向修正（背对电视）
+for o in bpy.data.objects:
+    if o.name.startswith("Sofa"):
+        o.rotation_euler[2] = 0.0
+
+print("重定位完成")
