@@ -31,8 +31,8 @@ bpy.context.scene.unit_settings.system = "METRIC"
 TEX_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "textures")
 
 
-def tex_mat(name, file, scale=1.0, rough=0.6, metal=0.0, tint=(1, 1, 1)):
-    """带贴图的材质（Box 投影，简单可用）"""
+def tex_mat(name, file, scale=1.0, rough=0.6, metal=0.0, tint=(1, 1, 1), normal=None, rough_map=True):
+    """带贴图 + 法线 + 粗糙度的材质"""
     m = bpy.data.materials.get(name)
     if m:
         return m
@@ -55,6 +55,28 @@ def tex_mat(name, file, scale=1.0, rough=0.6, metal=0.0, tint=(1, 1, 1)):
         nt.links.new(coord.outputs["Object"], mapping.inputs["Vector"])
         nt.links.new(mapping.outputs["Vector"], tex.inputs["Vector"])
         nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
+        # 粗糙度贴图：用同一张图的灰度
+        if rough_map:
+            rgb2bw = nt.nodes.new("ShaderNodeRGBToBW")
+            nt.links.new(tex.outputs["Color"], rgb2bw.inputs["Color"])
+            ramp = nt.nodes.new("ShaderNodeValToRGB")
+            ramp.color_ramp.elements[0].color = (rough * 0.7, rough * 0.7, rough * 0.7, 1)
+            ramp.color_ramp.elements[1].color = (min(1, rough * 1.35),) * 3 + (1,)
+            nt.links.new(rgb2bw.outputs["Val"], ramp.inputs["Fac"])
+            nt.links.new(ramp.outputs["Color"], bsdf.inputs["Roughness"])
+        if normal:
+            npath = os.path.join(TEX_DIR, normal)
+            if os.path.exists(npath):
+                nimg = bpy.data.images.load(npath, check_existing=True)
+                ntex = nt.nodes.new("ShaderNodeTexImage")
+                ntex.image = nimg
+                ntex.image.colorspace_settings.name = "Non-Color"
+                ntex.location = (-520, -120)
+                nm = nt.nodes.new("ShaderNodeNormalMap")
+                nm.inputs["Strength"].default_value = 0.85
+                nm.location = (-260, -120)
+                nt.links.new(ntex.outputs["Color"], nm.inputs["Color"])
+                nt.links.new(nm.outputs["Normal"], bsdf.inputs["Normal"])
     else:
         bsdf.inputs["Base Color"].default_value = (*tint, 1)
     return m
@@ -85,28 +107,28 @@ def mat(name, color, rough=0.6, metal=0.0, alpha=1.0):
     return m
 
 
-M_WALL = tex_mat("Wall", "wall.png", 3.0, 0.9)
-M_FLOOR = tex_mat("Floor", "marble.png", 0.6, 0.3)
+M_WALL = tex_mat("Wall", "wall.png", 3.0, 0.9, normal="wall_normal.png")
+M_FLOOR = tex_mat("Floor", "marble.png", 0.6, 0.28, normal="marble_normal.png")
 M_CEIL = mat("Ceil", (0.95, 0.95, 0.94), 0.9)
-M_WOOD = tex_mat("Wood", "wood.png", 1.0, 0.5)
-M_WOOD_L = tex_mat("WoodLight", "wood_light.png", 1.2, 0.5)
-M_FABRIC = tex_mat("Fabric", "fabric.png", 2.5, 0.95)
-M_LINEN = tex_mat("Linen", "fabric.png", 3.0, 0.92)
+M_WOOD = tex_mat("Wood", "wood.png", 1.0, 0.48, normal="wood_normal.png")
+M_WOOD_L = tex_mat("WoodLight", "wood_light.png", 1.2, 0.5, normal="wood_normal.png")
+M_FABRIC = tex_mat("Fabric", "fabric.png", 2.5, 0.95, normal="fabric_normal.png")
+M_LINEN = tex_mat("Linen", "fabric.png", 3.0, 0.92, normal="fabric_normal.png")
 M_DARK = mat("Dark", (0.10, 0.10, 0.11), 0.5)
 M_METAL = mat("Metal", (0.45, 0.47, 0.50), 0.3, 0.8)
 M_SCREEN = mat("Screen", (0.06, 0.09, 0.12), 0.15)
 M_GREEN = mat("Plant", (0.18, 0.45, 0.26), 0.7)
 M_CAT = mat("CatFur", (0.85, 0.82, 0.76), 0.85)
-M_RUG = tex_mat("Rug", "rug.png", 3.0, 0.98)
+M_RUG = tex_mat("Rug", "rug.png", 3.0, 0.98, normal="fabric_normal.png")
 M_GLASS = mat("Glass", (0.35, 0.62, 0.80), 0.1, 0.0, 0.35)
-M_CITY = mat("City", (0.10, 0.24, 0.38), 0.8)
+M_CITY = tex_mat("CityNight", "city_night.png", 1.0, 0.9)
 
 # 分房间配色
 M_WALL_WARM = mat("WallWarm", (0.94, 0.90, 0.84), 0.88)
 M_WALL_SAGE = mat("WallSage", (0.80, 0.85, 0.80), 0.88)
 M_WALL_SLATE = mat("WallSlate", (0.26, 0.30, 0.36), 0.85)
 M_WALL_TERRA = mat("WallTerra", (0.82, 0.70, 0.60), 0.88)
-M_FLOOR_WOOD = tex_mat("FloorWood", "wood.png", 0.35, 0.45)
+M_FLOOR_WOOD = tex_mat("FloorWood", "wood.png", 0.35, 0.42, normal="wood_normal.png")
 M_FLOOR_TILE = mat("FloorTile", (0.88, 0.88, 0.89), 0.35)
 M_FLOOR_CAT = mat("FloorCat", (0.78, 0.80, 0.76), 0.5)
 M_GOLD = mat("Gold", (0.80, 0.66, 0.36), 0.3, 0.85)
@@ -207,7 +229,7 @@ def wall_z(name, z, x0, x1, door=None, door_w=1.0, m=M_WALL):
 
 # 外墙
 wall_z("OuterS", -R, -R, R)
-wall_z("OuterN", R, -R, R)
+wall_z("OuterN", R, -R, R, door=2.5, door_w=3.0)
 wall_x("OuterW", -R, -R, R)
 wall_x("OuterE", R, -R, R)
 
@@ -215,7 +237,11 @@ wall_x("OuterE", R, -R, R)
 wall_z("BedLiving", 1, -R, -1, door=-3.5, m=M_WALL_WARM)      # 主卧 ↔ 客厅
 wall_x("LeftHall", -1, -5, 1, door=-3, m=M_WALL_SAGE)          # 电竞房 ↔ 玄关
 wall_x("CatHall", 1, -R, -1, door=-3.5, m=M_WALL_SAGE)         # 猫房 ↔ 玄关
-wall_z("CatLiving", -1, 1, R, door=3.5, m=M_WALL_WARM)         # 猫房 ↔ 客厅
+wall_z("CatLiving", -1, 1, R, door=3.5, m=M_WALL_WARM)
+# 书房隔断（x=3.2，门在 z=5），靠客厅东北角
+wall_x("StudyWall", 3.2, 3.2, R, door=5.0, door_w=0.9, m=M_WALL_WARM)
+# 衣帽间隔断（x=-2.6，门在 z=3.2），从主卧东侧划出
+wall_x("ClosetWall", -3.2, 1, R, door=3.2, door_w=0.9, m=M_WALL_WARM)         # 猫房 ↔ 客厅
 
 # 踢脚线
 for (x, z, w, d) in [(0, -R + 0.07, R * 2, 0.02), (0, R - 0.07, R * 2, 0.02),
@@ -225,8 +251,7 @@ for (x, z, w, d) in [(0, -R + 0.07, R * 2, 0.02), (0, R - 0.07, R * 2, 0.02),
 # 主卧窗户（西墙 x=-6，z=4.6）
 win_x, win_z = -R + 0.02, 4.6
 box("WinFrame", 0.06, 2.2, 1.6, win_x, -win_z, 1.62, m=M_WALL, bevel=0)
-box("WinGlass", 0.03, 2.0, 1.4, win_x + 0.04, -win_z, 1.62, m=M_CITY, bevel=0)
-box("WinGlow", 0.02, 1.9, 1.3, win_x + 0.06, -win_z, 1.62, m=M_GLASS, bevel=0)
+box("WinGlass", 0.02, 2.0, 1.4, win_x + 0.04, -win_z, 1.62, m=M_CITY, bevel=0)
 
 
 # ---------------------------------------------------------------- 家具
@@ -269,13 +294,13 @@ for i, (dx, dy, rz) in enumerate([(-0.95, 0, 0), (0.95, 0, math.pi), (0, -0.75, 
     box(f"ChairBack{i}", 0.42, 0.06, 0.45, 4.7 + dx, -1.3 + dy - 0.18, 0.68, rz=rz, m=M_WOOD_L)
 
 # 开放厨房（东墙 x=5.6，z 0.9~3.5）
-box("KitchenCounter", 0.62, 2.6, 0.88, 5.6, -2.2, 0.44, m=M_WOOD)
-box("KitchenTop", 0.68, 2.66, 0.05, 5.6, -2.2, 0.9, m=M_WOOD_L, bevel=0)
-box("KitchenSink", 0.5, 0.5, 0.04, 5.55, -1.7, 0.92, m=M_METAL, bevel=0)
-box("KitchenCabinet", 0.6, 2.6, 0.7, 5.62, -2.2, 1.75, m=M_FABRIC)
+box("KitchenCounter", 0.62, 2.6, 0.88, 5.6, -1.6, 0.44, m=M_WOOD)
+box("KitchenTop", 0.68, 2.66, 0.05, 5.6, -1.6, 0.9, m=M_WOOD_L, bevel=0)
+box("KitchenSink", 0.5, 0.5, 0.04, 5.55, -1.2, 0.92, m=M_METAL, bevel=0)
+box("KitchenCabinet", 0.6, 2.6, 0.7, 5.62, -1.6, 1.75, m=M_FABRIC)
 
 # 书架（东墙）
-box("ShelfBody", 0.34, 1.5, 1.9, 5.6, -3.6, 0.95, m=M_WOOD)
+box("ShelfBody", 0.34, 1.5, 1.9, -0.78, -4.6, 0.95, m=M_WOOD)
 for i in range(4):
     box(f"ShelfBoard{i}", 0.3, 1.44, 0.04, 5.58, -3.6, 0.35 + i * 0.42, m=M_WOOD_L, bevel=0)
     for j in range(2):
@@ -566,6 +591,61 @@ for i in range(3):
 
 # 床边地毯花纹压边
 box("BedRugTrim", 2.0, 0.03, 0.02, -4.0, 2.28, 0.02, m=M_WOOD_L, bevel=0)
+
+
+# ---------------------------------------------------------------- 书房 / 衣帽间 / 阳台
+# 书房（x 3.2~6，z 3.2~6）
+box("StudyDeskTop", 0.7, 1.6, 0.06, 5.55, -4.6, 0.76, m=M_WOOD)
+for ddy in (-0.7, 0.7):
+    box("StudyDeskLeg", 0.07, 0.07, 0.74, 5.55, -4.6 + ddy, 0.37, m=M_DARK, bevel=0)
+box("StudyChairSeat", 0.45, 0.45, 0.08, 4.95, -4.6, 0.46, m=M_SAGE_FAB, bevel=0.02)
+box("StudyChairBack", 0.45, 0.08, 0.5, 4.72, -4.6, 0.72, m=M_SAGE_FAB, bevel=0.02)
+box("StudyLamp", 0.16, 0.16, 0.03, 5.5, -5.3, 0.8, m=M_DARK, bevel=0)
+box("StudyLampArm", 0.04, 0.04, 0.34, 5.5, -5.3, 0.98, m=M_DARK, bevel=0)
+cyl("StudyLampHead", 0.1, 0.08, 5.5, -5.2, 1.16, m=M_GOLD, seg=16)
+box("StudyShelf", 1.4, 0.3, 1.8, 3.9, -5.7, 0.9, m=M_WOOD)
+for i in range(4):
+    box("StudyShelfBoard", 1.36, 0.28, 0.04, 3.9, -5.7, 0.3 + i * 0.45, m=M_WOOD_L, bevel=0)
+rug("StudyRug", 4.4, -4.4, 0.9)
+box("StudyBooks1", 0.3, 0.22, 0.05, 5.4, -4.3, 0.8, rz=0.2, m=M_TERRA_FAB, bevel=0)
+box("StudyBooks2", 0.28, 0.2, 0.04, 5.42, -4.32, 0.84, rz=0.35, m=M_SAGE_FAB, bevel=0)
+
+# 衣帽间（x -2.6~-1，z 1~6）
+box("ClosetWard1", 0.5, 4.4, 2.3, -1.32, -3.4, 1.15, m=M_WOOD)
+for i in range(5):
+    box("ClosetDoor1", 0.02, 0.85, 2.2, -1.58, -5.3 + i * 0.9, 1.15, m=M_WOOD_L, bevel=0)
+box("ClosetWard2", 1.7, 0.45, 2.2, -2.1, -1.32, 1.1, m=M_WOOD)
+box("ClosetIsland", 0.8, 0.7, 0.85, -2.15, -3.4, 0.42, m=M_WOOD_L)
+box("ClosetIslandTop", 0.85, 0.75, 0.05, -2.15, -3.4, 0.87, m=M_TEX_MARBLE, bevel=0)
+cyl("ClosetMirror", 0.4, 0.03, -3.12, -4.6, 1.5, rz=math.pi / 2, m=M_GLASS, seg=28)
+cyl("ClosetMirrorRing", 0.44, 0.04, -3.14, -4.6, 1.5, rz=math.pi / 2, m=M_GOLD, seg=28)
+rug("ClosetRug", -2.15, -3.9, 0.75, M_RUG)
+
+# 阳台（z 6~8，x -1~6）
+box("BalconyFloor", 7.0, 2.0, 0.12, 2.5, -7.0, -0.02, m=M_FLOOR_TILE, bevel=0)
+# 玻璃栏板
+box("BalconyRailFront", 7.0, 0.06, 1.05, 2.5, -8.0, 0.52, m=M_GLASS, bevel=0)
+box("BalconyRailL", 0.06, 2.0, 1.05, -1.0, -7.0, 0.52, m=M_GLASS, bevel=0)
+box("BalconyRailR", 0.06, 2.0, 1.05, 6.0, -7.0, 0.52, m=M_GLASS, bevel=0)
+box("BalconyRailTop", 7.0, 0.08, 0.06, 2.5, -8.0, 1.06, m=M_METAL, bevel=0)
+# 阳台家具
+box("BalconyTable", 1.0, 0.6, 0.06, 2.2, -7.3, 0.72, m=M_WOOD)
+for dx in (-0.4, 0.4):
+    for dy in (-0.22, 0.22):
+        box("BalconyTableLeg", 0.06, 0.06, 0.7, 2.2 + dx, -7.3 + dy, 0.35, m=M_DARK, bevel=0)
+box("BalconyChair1", 0.44, 0.44, 0.06, 1.2, -7.3, 0.42, m=M_SAGE_FAB, bevel=0.02)
+box("BalconyChair1Back", 0.44, 0.06, 0.42, 1.2, -7.52, 0.64, m=M_SAGE_FAB, bevel=0.02)
+box("BalconyChair2", 0.44, 0.44, 0.06, 3.2, -7.3, 0.42, m=M_SAGE_FAB, bevel=0.02)
+box("BalconyChair2Back", 0.44, 0.06, 0.42, 3.2, -7.52, 0.64, m=M_SAGE_FAB, bevel=0.02)
+for i, bx in enumerate((0.0, 5.4)):
+    cyl("BalconyPot", 0.2, 0.36, bx, -7.0, 0.18, m=M_WOOD_L)
+    for k in range(4):
+        a = k * 1.6
+        sph("BalconyLeaf", 0.22, bx + math.cos(a) * 0.1, -7.0 + math.sin(a) * 0.1, 0.5 + k * 0.12, m=M_GREEN, sy=0.85)
+# 晾衣架
+box("DryingRack", 1.4, 0.04, 0.04, 4.6, -7.6, 1.5, m=M_METAL, bevel=0)
+box("DryingRackL", 0.04, 0.04, 0.5, 3.9, -7.6, 1.25, m=M_METAL, bevel=0)
+box("DryingRackR", 0.04, 0.04, 0.5, 5.3, -7.6, 1.25, m=M_METAL, bevel=0)
 
 bpy.ops.export_scene.gltf(
     filepath=out,

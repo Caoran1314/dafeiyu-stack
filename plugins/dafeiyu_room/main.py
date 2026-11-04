@@ -120,13 +120,23 @@ class Room(Star):
                 return label
         return "在房间"
 
+    def _activity_mode(self):
+        try:
+            p = os.path.join(DATA_DIR, "activity.json")
+            if not os.path.exists(p):
+                return None
+            with open(p, "r", encoding="utf-8") as f:
+                d = json.load(f)
+            if time.time() > float(d.get("ts", 0)) + float(d.get("ttl", 0)):
+                return None
+            return d.get("app")
+        except Exception:
+            return None
+
     def _compute_mode(self) -> str:
         now = time.time()
         quiet_min = float(self._c("quiet_minutes", 25)) * 60
         if now - self.last_activity < quiet_min:
-            # 刚聊完 —— 她在拿手机
-            if self._base_mode() == "sleep":
-                return "phone"
             return "phone"
         return self._base_mode()
 
@@ -144,6 +154,9 @@ class Room(Star):
             "gaming": "在电竞房打游戏",
             "dresser": "在梳妆台前",
             "rug": "在地毯上拉伸",
+    "study": "在书房看书",
+    "closet": "在衣帽间挑衣服",
+    "balcony": "在阳台吹风",
             "bed": "躺床上刷手机",
             "read": "靠床上看书",
         }.get(mode, self._base_label())
@@ -237,6 +250,8 @@ class Room(Star):
             app = {"上班": "away", "去上班": "away", "下班": "catbed",
                    "撸猫": "catbed", "看猫": "catbed", "梳妆": "dresser",
                    "拉伸": "rug", "瑜伽": "rug", "看书": "read",
+                   "书房": "study", "写字": "study", "衣帽间": "closet", "挑衣服": "closet",
+                   "阳台": "balcony", "吹风": "balcony", "发呆": "window",
                    "看电视": "tv", "去沙发": "sofa", "沙发": "sofa",
                    "刷抖音": "douyin", "抖音": "douyin", "刷b站": "bilibili", "b站": "bilibili",
                    "刷快手": "kuaishou", "刷小红书": "xiaohongshu", "刷微博": "weibo",
@@ -275,6 +290,10 @@ class Room(Star):
         "catbed": ("蹲下来撸猫", "catbed"),
         "dresser": ("在梳妆台前", "dresser"),
         "rug": ("在地毯上拉伸", "rug"),
+        "study": ("在书房看书", "study"),
+        "closet": ("在衣帽间挑衣服", "closet"),
+        "balcony": ("在阳台吹风", "balcony"),
+        "read": ("靠在床上看书", "read"),
         "tv": ("窝在沙发看电视", "tv"),
         "sofa": ("窝在沙发上", "sofa"),
         "douyin": ("刷抖音", "phone"),

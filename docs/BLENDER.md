@@ -266,3 +266,30 @@ blender --background --python build_apartment.py -- --out .../model/room.glb
 - 玄关换鞋凳、地垫
 
 改配色：直接改脚本顶部的 `M_WALL_*` / `M_FLOOR_*` 颜色值，重新导出即可。
+
+
+## 电影感渲染管线（页面侧）
+
+| 环节 | 做法 |
+|---|---|
+| 色调映射 | `ACESFilmicToneMapping`，曝光 1.0 |
+| 环境反射 | `RoomEnvironment` + `PMREMGenerator`，强度 0.10 |
+| 阴影 | `PCFSoftShadowMap` |
+| 泛光 | `UnrealBloomPass`（强度 0.09，阈值 0.95） |
+| 调色 | 自定义 `GradeShader`：暗角、对比度 1.06、饱和度 1.04、暖色偏移、胶片颗粒 0.018 |
+| 灯光 | 各房间暖光 + 卫生间冷光 + 电视冷光，强度按 ACES 重新标定 |
+| 材质 | 贴图 + 法线贴图（木/布/石/墙）+ 粗糙度贴图 |
+
+**调参位置**：`index.html` 里 `toneMappingExposure`、`addMoodLight(...)`、`GradeShader.uniforms`、`UnrealBloomPass` 参数。
+
+### 过曝排查经验
+
+ACES 会压暗高光但也会让整体变亮，原来给无 ACES 调的灯光（半球光 1.05、环境光 0.65、
+点光 6~7）在 ACES 下会全白。对应的修正值：半球 0.30、环境 0.14、点光 1~2、
+环境贴图强度 0.10，曝光 1.0。
+
+### 画质糊 / 噪点
+
+- `EffectComposer` 必须在创建后立刻 `setSize(window.innerWidth, window.innerHeight)`，
+  否则会以默认小尺寸渲染再放大 → 满屏马赛克
+- 胶片颗粒不要超过 0.02，否则像噪点
