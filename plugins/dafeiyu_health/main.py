@@ -26,8 +26,11 @@ CORE = {
     "mindcore": ("/AstrBot/data/plugin_data/dafeiyu_mindcore/memory_core.db", 3600 * 24),
     "hormone": ("/AstrBot/data/plugin_data/dafeiyu_hormone/hormones.json", 3600 * 24 * 3),
     "persona": ("/AstrBot/data/plugin_data/dafeiyu_persona_core/persona_core.json", 3600 * 24 * 30),
-    "brain": ("/AstrBot/data/plugin_data/dafeiyu_brain/memory.db", 3600 * 24 * 7),
 }
+# 注意：dafeiyu_brain/memory.db 不在这里监控。
+# 它是旧记忆库，已经被 dafeiyu_mindcore 取代，只作为只读种子被导入一次，
+# 之后物理上不再回写（「旧库永不回写」）。它的 mtime 会永远停留在迁移那刻，
+# 监控它只会产生「brain 状态 N 小时没更新」的假告警。
 
 
 class Health(Star):
